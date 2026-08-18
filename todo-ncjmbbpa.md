@@ -1,6 +1,6 @@
 # Google OAuth Implementation Checklist
 
-- [ ] Reconcile the concurrent checkpoint while retaining the approved email magic-link fallback.
+- [x] Reconcile the concurrent checkpoint while retaining the approved email magic-link fallback.
 - [x] Confirm the current Supabase context and sign-in panel match the Phase 1 audit.
 - [x] Add a Supabase Google OAuth action that returns to `/pricing` on the current application origin.
 - [x] Add the Google-first sign-in UI while retaining the existing email magic-link fallback.
