@@ -1,4 +1,5 @@
 /** ToolImage homepage — Monochrome Instrument: an asymmetric editorial workbench makes the tool the hero. */
+/** ToolImage home — Monochrome Instrument: protected editorial copy on the left and the existing utility visual as a distinct responsive panel. */
 import { ArrowDownRight, ArrowRight, Check, ChevronDown, ImageDown, Maximize2, ShieldCheck, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { ImageStudio } from "@/components/ImageStudio";
@@ -11,10 +12,10 @@ const TEXTURE_ART = "/assets/toolimage-texture-panel.webp";
 
 export default function Home() {
   return <SiteShell><Seo title="ToolImage — Compress, Resize, and Convert Images Locally" description="Make image files fit with private, browser-based compression, resizing, and conversion. ToolImage keeps image processing on your device." path="/" schema={{ "@type": "SoftwareApplication", name: "ToolImage", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "USD" } }} /><main id="main-content">
-    <section className="hero-section" style={{ backgroundImage: `url(${HERO_ART})` }}>
+    <section className="hero-section">
       <div className="hero-measure" aria-hidden="true"><span>01</span><i /><span>LOCAL IMAGE UTILITY</span></div>
-      <div className="hero-copy"><p className="eyebrow"><span className="teal-dot" /> TOOLIMAGE / BUILT TO FIT</p><h1>Make the<br /><em>file</em> fit.</h1><p className="hero-copy__body">Compress, resize, and convert images with precise local tools. No software. No uploads. No unnecessary settings.</p><div className="hero-copy__actions"><a href="#compressor" className="primary-button">Compress an image <ArrowDownRight size={17} /></a><span>JPG · PNG · WebP</span></div></div>
-      <div className="hero-claim"><ShieldCheck size={17} /><span><strong>Your images stay on your device.</strong> Processing happens in this browser.</span></div>
+      <div className="hero-content"><div className="hero-copy"><p className="eyebrow"><span className="teal-dot" /> TOOLIMAGE / BUILT TO FIT</p><h1>Make the<br /><em>file</em> fit.</h1><p className="hero-copy__body">Compress, resize, and convert images with precise local tools. No software. No uploads. No unnecessary settings.</p><div className="hero-copy__actions"><a href="#compressor" className="primary-button">Compress an image <ArrowDownRight size={17} /></a><span>JPG · PNG · WebP</span></div></div><div className="hero-claim"><ShieldCheck size={17} /><span><strong>Your images stay on your device.</strong> Processing happens in this browser.</span></div></div>
+      <div className="hero-visual"><img src={HERO_ART} alt="ToolImage compression workbench visual" /></div>
     </section>
     <section className="tool-section" id="compressor"><div className="section-rail"><span>01</span><i /><span>COMPRESS</span><small>SET THE SIZE. KEEP THE IMAGE.</small></div><ImageStudio mode="compress" /></section>
     <section className="how-section" style={{ backgroundImage: `url(${TEXTURE_ART})` }}><div className="section-rail"><span>02</span><i /><span>HOW IT WORKS</span></div><div className="how-layout"><div className="section-intro"><p className="eyebrow">A SMALLER FILE, IN THREE MOVES</p><h2>Nothing more than<br />you need.</h2></div><ol className="steps-list"><li><span>01</span><div><strong>Choose an image</strong><p>Drop a JPG, PNG, or WebP into the workbench.</p></div></li><li><span>02</span><div><strong>Set the outcome</strong><p>Pick a size, dimension, or file format that works.</p></div></li><li><span>03</span><div><strong>Keep moving</strong><p>Download the result as soon as it is ready.</p></div></li></ol></div></section>

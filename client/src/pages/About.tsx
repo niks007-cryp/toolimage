@@ -1,0 +1,6 @@
+/** ToolImage about page — Monochrome Instrument: an honest product statement centred on calm, local utility. */
+import { Check } from "lucide-react";
+import { Seo } from "@/components/Seo";
+import { SiteShell } from "@/components/SiteShell";
+
+export default function About() { return <SiteShell><Seo title="About ToolImage — Local Image Utilities" description="Learn why ToolImage keeps image compression, resizing, and conversion practical, private, and browser-local." path="/about" /><main id="main-content" className="info-page"><section className="info-hero"><p className="eyebrow">TOOLIMAGE / ABOUT</p><h1>Less ceremony.<br /><em>More useful.</em></h1><p>ToolImage is built for the small image tasks that should take seconds, not a new account, a dashboard, or an upload queue.</p></section><section className="about-sheet"><div><p className="eyebrow">THE PRINCIPLE</p><h2>Your files belong<br />on your device.</h2></div><div><p>Compression, resize, and conversion happen inside a modern browser wherever practical. The point is not a more complicated workspace. It is a calmer one that gets out of the way.</p><ul><li><Check size={16} /> Local browser processing</li><li><Check size={16} /> Clear, practical controls</li><li><Check size={16} /> No account required for the core tools</li></ul></div></section></main></SiteShell>; }
