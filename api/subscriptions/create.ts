@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { isRegionalPriceId, REGIONAL_PRICE_CONFIG } from "../../shared/pricing";
+import { isRegionalPriceId, REGIONAL_PRICE_CONFIG } from "../../shared/pricing.js";
 import { apiError, method, readJson } from "../_lib/http";
 import { planForCurrency, razorpay, razorpayKeyId } from "../_lib/razorpay";
 import { adminSupabase, requireUser } from "../_lib/supabase";
