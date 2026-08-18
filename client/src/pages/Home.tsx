@@ -3,13 +3,14 @@ import { ArrowDownRight, ArrowRight, Check, ChevronDown, ImageDown, Maximize2, S
 import { Link } from "wouter";
 import { ImageStudio } from "@/components/ImageStudio";
 import { SiteShell } from "@/components/SiteShell";
+import { Seo } from "@/components/Seo";
 
-const HERO_ART = "/manus-storage/toolimage-hero-compression_ec9e1c4c.png";
-const COMPARISON_ART = "/manus-storage/toolimage-comparison-art_5d0042b9.png";
-const TEXTURE_ART = "/manus-storage/toolimage-texture-panel_16d6c94a.png";
+const HERO_ART = "/assets/toolimage-hero-compression.webp";
+const COMPARISON_ART = "/assets/toolimage-comparison-art.webp";
+const TEXTURE_ART = "/assets/toolimage-texture-panel.webp";
 
 export default function Home() {
-  return <SiteShell><main>
+  return <SiteShell><Seo title="ToolImage — Compress, Resize, and Convert Images Locally" description="Make image files fit with private, browser-based compression, resizing, and conversion. ToolImage keeps image processing on your device." path="/" schema={{ "@type": "SoftwareApplication", name: "ToolImage", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "USD" } }} /><main id="main-content">
     <section className="hero-section" style={{ backgroundImage: `url(${HERO_ART})` }}>
       <div className="hero-measure" aria-hidden="true"><span>01</span><i /><span>LOCAL IMAGE UTILITY</span></div>
       <div className="hero-copy"><p className="eyebrow"><span className="teal-dot" /> TOOLIMAGE / BUILT TO FIT</p><h1>Make the<br /><em>file</em> fit.</h1><p className="hero-copy__body">Compress, resize, and convert images with precise local tools. No software. No uploads. No unnecessary settings.</p><div className="hero-copy__actions"><a href="#compressor" className="primary-button">Compress an image <ArrowDownRight size={17} /></a><span>JPG · PNG · WebP</span></div></div>

@@ -2,9 +2,8 @@
  * ToolImage workbench — Monochrome Instrument: direct local processing with only the controls needed now.
  */
 import { ChangeEvent, DragEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowDownToLine, ArrowLeft, Check, ChevronDown, FileImage, ImageDown, LoaderCircle, LockKeyhole, RefreshCw, SlidersHorizontal, Upload, WandSparkles } from "lucide-react";
-import { ImageFormat, ImageJobResult, compressToTarget, convertImage, downloadResult, formatBytes, getFormatLabel, getImageDetails, ImageDetails, isAcceptedImage, resizeImage } from "@/lib/imageProcessing";
+import { ImageFormat, ImageJobResult, compressToTarget, convertImage, downloadResult, formatBytes, getFormatLabel, getImageDetails, ImageDetails, resizeImage } from "@/lib/imageProcessing";
 
 export type StudioMode = "compress" | "resize" | "convert";
 
@@ -29,11 +28,10 @@ function formatReduction(original: number, current: number) {
   return `${(((original - current) / original) * 100).toFixed(1)}%`;
 }
 
-export function ImageStudio({ mode, compact = false }: { mode: StudioMode; compact?: boolean }) {
+export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mode: StudioMode; compact?: boolean; initialTargetBytes?: number }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const originalPreviewRef = useRef<string | null>(null);
   const resultPreviewRef = useRef<string | null>(null);
-  const reducedMotion = useReducedMotion();
   const [file, setFile] = useState<File | null>(null);
   const [details, setDetails] = useState<ImageDetails | null>(null);
   const [originalPreview, setOriginalPreview] = useState<string | null>(null);
@@ -41,7 +39,7 @@ export function ImageStudio({ mode, compact = false }: { mode: StudioMode; compa
   const [isDragging, setIsDragging] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [target, setTarget] = useState(200 * 1024);
+  const [target, setTarget] = useState(initialTargetBytes ?? 200 * 1024);
   const [customTarget, setCustomTarget] = useState("");
   const [width, setWidth] = useState(1200);
   const [height, setHeight] = useState(800);
@@ -52,6 +50,10 @@ export function ImageStudio({ mode, compact = false }: { mode: StudioMode; compa
     if (originalPreviewRef.current) URL.revokeObjectURL(originalPreviewRef.current);
     if (resultPreviewRef.current) URL.revokeObjectURL(resultPreviewRef.current);
   }, []);
+
+  useEffect(() => {
+    if (initialTargetBytes) { setTarget(initialTargetBytes); setCustomTarget(""); }
+  }, [initialTargetBytes]);
 
   const reset = () => {
     if (originalPreviewRef.current) URL.revokeObjectURL(originalPreviewRef.current);
@@ -64,10 +66,6 @@ export function ImageStudio({ mode, compact = false }: { mode: StudioMode; compa
   const applyFile = async (candidate?: File) => {
     if (!candidate) return;
     reset();
-    if (!isAcceptedImage(candidate)) {
-      setError("That file type isn’t supported yet. Try JPG, PNG or WebP.");
-      return;
-    }
     try {
       const imageDetails = await getImageDetails(candidate);
       const previewUrl = URL.createObjectURL(candidate);
@@ -108,9 +106,9 @@ export function ImageStudio({ mode, compact = false }: { mode: StudioMode; compa
     setError(null); setProcessing(true); setResult(null);
     try {
       const processed = mode === "compress"
-        ? await compressToTarget(file, activeTarget)
+        ? await compressToTarget(file, activeTarget, details.type)
         : mode === "resize"
-          ? await resizeImage(file, width, height)
+          ? await resizeImage(file, width, height, details.type)
           : await convertImage(file, format);
       resultPreviewRef.current = processed.previewUrl;
       setResult(processed);
@@ -132,10 +130,10 @@ export function ImageStudio({ mode, compact = false }: { mode: StudioMode; compa
           role="button" tabIndex={0} aria-label="Upload an image" onClick={() => inputRef.current?.click()} onKeyDown={activateDropZone}
           onDragOver={dragOver} onDragLeave={dragLeave} onDrop={drop}
         >
-          <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={selectFile} className="sr-only" />
+          <input ref={inputRef} type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={selectFile} className="sr-only" />
           <div className="dropzone__status"><span><i /> INPUT READY</span><span>LOCAL WORKSPACE / 30 MB MAX</span></div>
           <div className="dropzone__ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
-          <motion.span className="dropzone__icon" animate={isDragging && !reducedMotion ? { y: -4 } : { y: 0 }}><Upload size={23} strokeWidth={1.7} /></motion.span>
+          <span className="dropzone__icon"><Upload size={23} strokeWidth={1.7} /></span>
           <div><strong>{isDragging ? "Drop it to begin" : "Drop an image here"}</strong><span>or browse your device</span></div>
           <span className="dropzone__formats">JPG, PNG &amp; WebP · up to 30 MB</span>
         </div>
@@ -147,7 +145,7 @@ export function ImageStudio({ mode, compact = false }: { mode: StudioMode; compa
 
   return (
     <section className="workspace" aria-label={`${copy.action} workspace`}>
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={selectFile} className="sr-only" />
+      <input ref={inputRef} type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={selectFile} className="sr-only" />
       <div className="workspace__topline"><button type="button" className="text-button" onClick={reset}><ArrowLeft size={15} /> New image</button><span className="local-indicator"><LockKeyhole size={13} /> Local only</span></div>
       <div className="workspace__grid">
         <div className="preview-pane">
@@ -157,16 +155,16 @@ export function ImageStudio({ mode, compact = false }: { mode: StudioMode; compa
             <div className="stage-labels"><span>{result ? "Original" : getFormatLabel(details.type)}</span>{result && <span>Processed</span>}</div>
           </div>
           {result ? (
-            <div className="result-callout"><div><span className="success-mark"><Check size={15} /></span><div><strong>{result.hitTarget === false ? "Smallest practical version created" : "Your image is ready"}</strong><p>{result.hitTarget === false ? "The requested target would substantially reduce quality." : "Check the result, then download it."}</p></div></div><button type="button" className="secondary-button" onClick={() => downloadResult(result.blob, details.name, result.format)}><ArrowDownToLine size={16} /> Download</button></div>
+            <><div className="result-callout"><div><span className="success-mark"><Check size={15} /></span><div><strong>{result.alreadyWithinTarget ? "Your image already fits the target" : result.hitTarget === false ? "Smallest practical version created" : "Your image is ready"}</strong><p>{result.alreadyWithinTarget ? "The original file was already smaller than your selected size." : result.hitTarget === false ? "The requested target would substantially reduce quality." : "Check the result, then download it."}</p></div></div><button type="button" className="secondary-button" onClick={() => downloadResult(result.blob, details.name, result.format)}><ArrowDownToLine size={16} /> Download</button></div><p className="download-help">On iPhone or iPad, the result may open in a new tab. Long-press the image there and choose <strong>Save to Photos</strong>.</p></>
           ) : <div className="preview-caption"><FileImage size={15} /><span>Preview at original dimensions</span></div>}
         </div>
         <aside className="control-pane">
           <div className="file-readout"><div><span className="eyebrow">ORIGINAL</span><strong title={details.name}>{details.name}</strong></div><button type="button" aria-label="Choose another image" className="icon-button" onClick={() => inputRef.current?.click()}><RefreshCw size={16} /></button></div>
           <dl className="file-specs"><div><dt>File size</dt><dd>{formatBytes(details.size)}</dd></div><div><dt>Dimensions</dt><dd>{details.width.toLocaleString()} × {details.height.toLocaleString()}</dd></div><div><dt>Format</dt><dd>{getFormatLabel(details.type)}</dd></div></dl>
-          {mode === "compress" && <div className="control-block"><div className="control-label"><span>Target size</span><small>Closest practical result</small></div><div className="target-grid">{targetOptions.map((option) => <button type="button" key={option.value} className={!customTarget && target === option.value ? "target-button is-selected" : "target-button"} onClick={() => { setTarget(option.value); setCustomTarget(""); }}>{option.label}</button>)}</div><label className="custom-target"><span>Custom</span><input aria-label="Custom target size in kilobytes" value={customTarget} onChange={(event) => setCustomTarget(event.target.value.replace(/[^0-9.]/g, ""))} placeholder="e.g. 350" inputMode="decimal" /><em>KB</em></label></div>}
+          {mode === "compress" && <div className="control-block"><div className="control-label"><span>Target size</span><small>Closest practical result</small></div><div className="target-grid">{targetOptions.map((option) => <button type="button" key={option.value} className={!customTarget && target === option.value ? "target-button is-selected" : "target-button"} onClick={() => { setTarget(option.value); setCustomTarget(""); }}>{option.label}</button>)}</div><label className="custom-target"><span>Custom</span><input aria-label="Custom target size in kilobytes" value={customTarget} onChange={(event) => setCustomTarget(event.target.value.replace(/[^0-9.]/g, ""))} placeholder="e.g. 350" inputMode="decimal" /><em>KB</em></label>{details.type === "image/png" && <p className="format-note">PNG has no browser quality setting. For a target size, ToolImage creates a compact WebP locally and keeps transparent areas where supported.</p>}</div>}
           {mode === "resize" && <div className="control-block"><div className="control-label"><span>Dimensions</span><small>Pixels</small></div><div className="dimension-inputs"><label><span>Width</span><input aria-label="Width in pixels" type="number" value={width} min={1} max={8000} onChange={(event) => updateWidth(Number(event.target.value))} /></label><span className="dimension-times">×</span><label><span>Height</span><input aria-label="Height in pixels" type="number" value={height} min={1} max={8000} onChange={(event) => updateHeight(Number(event.target.value))} /></label></div><button type="button" className={keepRatio ? "ratio-toggle is-active" : "ratio-toggle"} onClick={() => setKeepRatio((state) => !state)}><span className="ratio-dot" /> Keep aspect ratio</button><div className="preset-row">{resizePresets.map((preset) => <button key={preset.label} type="button" onClick={() => applyPreset(preset)}>{preset.label}</button>)}</div></div>}
           {mode === "convert" && <div className="control-block"><div className="control-label"><span>Convert to</span><small>Your image remains local</small></div><div className="format-list">{(["image/jpeg", "image/png", "image/webp"] as ImageFormat[]).map((candidate) => <button type="button" key={candidate} className={format === candidate ? "format-option is-selected" : "format-option"} onClick={() => setFormat(candidate)}><span className="format-glyph">{getFormatLabel(candidate)}</span><span>{candidate === "image/jpeg" ? "Best for photos" : candidate === "image/png" ? "Keeps transparency" : "Small, modern format"}</span><Check size={16} /></button>)}</div></div>}
-          <AnimatePresence>{error && <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="form-error" role="alert">{error}</motion.div>}</AnimatePresence>
+          {error && <div className="form-error" role="alert">{error}</div>}
           <button type="button" className="primary-button" disabled={processing} onClick={processImage}>{processing ? <><LoaderCircle className="spin" size={17} /> Processing locally</> : <>{mode === "compress" ? <WandSparkles size={17} /> : mode === "resize" ? <SlidersHorizontal size={17} /> : <ImageDown size={17} />}{copy.action}</>}</button>
           {result && <div className="result-stats"><span className="eyebrow">RESULT</span><div><span>File size</span><strong>{formatBytes(result.blob.size)}</strong></div>{mode === "compress" && <div><span>Saved</span><strong>{formatReduction(details.size, result.blob.size)}</strong></div>}<div><span>Output</span><strong>{result.width.toLocaleString()} × {result.height.toLocaleString()} · {getFormatLabel(result.format)}</strong></div></div>}
           <p className="control-note"><LockKeyhole size={13} /> The image never leaves this browser.</p>

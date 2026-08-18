@@ -1,7 +1,7 @@
 /** ToolImage brand mark — Monochrome Instrument: a precise aperture-and-measure symbol. */
 import { Link } from "wouter";
 
-const MARK_URL = "/manus-storage/toolimage-mark_4fe85cd0.png";
+const MARK_URL = "/assets/toolimage-mark.png";
 
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (

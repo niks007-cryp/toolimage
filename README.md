@@ -2,127 +2,130 @@
 
 > **Simple image tools. Done exceptionally well.**
 
-ToolImage is a responsive, privacy-focused browser application for compressing images to a target file size, resizing image dimensions, and converting between JPG, PNG, and WebP. The core image work happens locally in the user’s browser, so uploaded images do not need to be sent to an image-processing server.
+ToolImage is a privacy-focused browser application for compressing images to a target file size, resizing dimensions, and converting JPG, PNG, and WebP images. Every image-processing operation runs locally in the browser. The application has **no image upload API, database, account system, OAuth flow, image-processing server, or paid image-processing dependency**.
 
 ## Features
 
-| Capability | What it does |
+| Capability | Description |
 | --- | --- |
-| Target-size compression | Compresses a JPG, PNG, or WebP toward selected sizes from 20 KB to 2 MB, or a custom target. |
-| Intelligent local compression | Iteratively evaluates quality and dimensions to find the closest practical result rather than applying one fixed setting. |
-| Image resizing | Supports fixed dimensions, maintained aspect ratio, and common social-media presets. |
-| Image conversion | Converts supported images between JPG, PNG, and WebP formats. |
-| Local privacy | Uses the browser’s Canvas APIs; image content is not uploaded by the application for processing. |
-| Responsive UX | Designed for modern browsers on desktop, tablet, and mobile operating systems. |
-| Accessibility | Includes semantic structure, keyboard-reachable upload controls, visible focus states, descriptive error states, and reduced-motion support. |
+| Target-size compression | Compress a JPG, PNG, or WebP toward a selected file size from 20 KB to 2 MB, or specify a custom target. |
+| Quality-aware local processing | Search locally through output quality and dimensions to return the closest practical target-size result. |
+| PNG-aware compression | Convert PNG uploads to compact WebP results for target-size compression, retaining transparency where browser support allows. |
+| Image resizing | Set exact width and height, preserve the original aspect ratio, or start from common social-media presets. |
+| Image conversion | Convert supported images between JPG, PNG, and WebP without server upload. |
+| Client-side validation | Check file signatures, zero-byte files, file size, image dimensions, decode failures, and target-size inputs before processing. |
+| Responsive, accessible UI | Support keyboard upload activation, visible focus states, reduced motion, mobile layouts, and clear recovery guidance. |
 
-## Architecture
-
-ToolImage is a static frontend application. The interface uses React, TypeScript, Tailwind CSS, Wouter routing, and Framer Motion. The image-processing layer is separated from the UI in `client/src/lib/imageProcessing.ts`.
+## Privacy architecture
 
 ```text
-User selects image
+User selects an image
         ↓
-Browser validates type, size, and dimensions
+Browser checks the file signature and limits
         ↓
-Canvas rasterizes image locally
+Browser Canvas decodes and transforms the image locally
         ↓
-Compression / resize / conversion runs in-browser
+Browser creates a local Blob and preview
         ↓
-Result Blob is generated locally
-        ↓
-User downloads the processed image
+User downloads the finished file
 ```
 
-The application does not require a database, authentication, paid image-processing service, AI provider, or server-side image storage for the current V1 feature set.
+ToolImage does not send image bytes to an application server. The browser uses standard `File`, `Image`, `Canvas`, `Blob`, and object-URL APIs for its image workflow. Object URLs are revoked when they are no longer needed.
 
 ## Technology stack
 
 | Layer | Technology |
 | --- | --- |
-| Framework | React 19 with Vite |
+| Client framework | React 19 and Vite |
 | Language | TypeScript |
-| Styling | Tailwind CSS 4 with a custom design system |
+| Styling | Tailwind CSS 4 plus a custom CSS design system |
 | Routing | Wouter |
 | Motion | Framer Motion |
 | Icons | Lucide React |
-| Image processing | Browser Canvas API and Blob download APIs |
+| Image processing | Browser Canvas and Blob APIs |
+| Hosting target | Static Vite output with Vercel SPA rewrites |
+
+## Project structure
+
+```text
+client/
+  public/
+    assets/          # Versioned visual assets used by the interface
+    favicon.svg
+    manifest.webmanifest
+    robots.txt
+    sitemap.xml
+  src/
+    components/      # Shared UI, workspace, layout, metadata handling
+    lib/             # Local image processing and SEO registry
+    pages/           # Homepage, tools, legal, pricing, and fallback routes
+vercel.json          # Static Vite build and SPA rewrite configuration
+```
 
 ## Local development
 
-### Requirements
-
 Use a recent Node.js LTS release and pnpm.
 
-### Install and run
-
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The development server is exposed on the address printed by Vite. For a production build:
+The development server prints a local URL. It supports hot reloading for client code.
+
+## Quality and production commands
 
 ```bash
 pnpm check
 pnpm build
-pnpm start
+pnpm preview
 ```
+
+`pnpm check` runs TypeScript validation. `pnpm build` generates static production assets in `dist/public`.
 
 ## Environment variables
 
-The V1 application does not require any user-supplied environment variables to perform image processing. The project can run as a static frontend.
+No environment variables are required for the current application. Do not add image-processing credentials to the frontend: the product is designed to process images locally without them.
 
-If optional analytics are enabled in the host environment, the template supports these injected variables:
+## Deployment
 
-| Variable | Purpose |
+ToolImage is configured for Vercel static deployment.
+
+1. Import this repository into Vercel.
+2. Use the included `vercel.json` configuration.
+3. Build with `pnpm build`; Vercel serves `dist/public`.
+4. The rewrite rule returns `index.html` for client-side routes, so direct visits to paths such as `/compress-jpg` and `/compress-image-to-50kb` load correctly.
+5. Configure the intended custom domain in Vercel before launch.
+
+The SEO registry and sitemap currently use `https://toolimage.io` as the canonical domain. If production uses a different domain, update `client/src/lib/seo.ts`, `client/index.html`, `client/public/robots.txt`, and `client/public/sitemap.xml` together before deploying.
+
+## SEO
+
+ToolImage provides dedicated, useful routes for:
+
+| Compression pages | Utility pages |
 | --- | --- |
-| `VITE_ANALYTICS_ENDPOINT` | Optional analytics script endpoint. |
-| `VITE_ANALYTICS_WEBSITE_ID` | Optional analytics site identifier. |
+| `/compress-image` | `/resize-image` |
+| `/compress-jpg` | `/convert-image` |
+| `/compress-png` | `/privacy` |
+| `/compress-webp` | `/terms` |
+| `/compress-image-to-20kb` |  |
+| `/compress-image-to-50kb` |  |
+| `/compress-image-to-100kb` |  |
+| `/compress-image-to-200kb` |  |
 
-Do not store API keys in the frontend. ToolImage is designed to avoid API-key-dependent image processing.
+Route-specific titles, descriptions, canonical URLs, Open Graph fields, Twitter fields, and `SoftwareApplication` structured data are updated in the browser for each route. The pricing page is marked `noindex` until a real purchase flow exists.
 
-## Compression algorithm
+## Image-processing behavior
 
-The target-size compressor follows a local iterative strategy.
+For target-size compression, ToolImage performs a bounded local search. At each size pass, it searches for the highest practical JPEG or WebP quality that fits the target. If no practical quality fits, it makes a measured dimension reduction and tries again. The process is bounded and yields to the browser between passes to keep the interface responsive.
 
-1. ToolImage validates the selected image and reads its dimensions in the browser.
-2. It renders the image to a local Canvas and tries JPEG or WebP output, depending on the source format.
-3. A binary-quality search identifies the highest quality that meets the requested target at the current dimensions.
-4. If the file is still too large, the algorithm makes a modest dimension reduction and repeats the quality search.
-5. If the target cannot be reached without excessive degradation, ToolImage returns the smallest practical result and communicates that outcome.
-
-PNG sources are compressed to WebP in the target-size workflow because the browser Canvas API does not expose a comparable quality control for lossless PNG encoding. The resize and format-conversion tools retain the chosen output format.
-
-## Privacy architecture
-
-ToolImage’s processing flow is intentionally client-side. File validation, image decoding, Canvas rendering, encoded result creation, preview generation, and final download are all browser operations. No image upload endpoint is used by this V1 application.
-
-This local architecture reduces per-image operating cost and supports privacy-sensitive use cases. Browser capabilities and device memory can differ, so the application validates large files and dimensions before processing and provides clear, nontechnical errors when local processing is not appropriate.
-
-## Vercel deployment
-
-ToolImage can be deployed as a static Vite site.
-
-1. Import the GitHub repository into Vercel.
-2. Set the build command to `pnpm build`.
-3. Set the output directory to `dist/public`.
-4. Deploy without adding image-processing secrets or backend storage configuration.
-
-The Express server in this project supports static-hosting fallback when running the included production server, but the Vite build output can also be served by a static host with SPA fallback support.
-
-## SEO files
-
-The project includes `robots.txt` and `sitemap.xml` in `client/public/`, along with base metadata in `client/index.html`. Before public launch, replace the example canonical domain `https://toolimage.app/` in the metadata and sitemap if the production domain differs.
+PNG output does not have a browser quality setting. For a specific compressed target, ToolImage therefore produces a WebP result locally; this is disclosed in the workspace. The resize and conversion tools retain the selected output format.
 
 ## Browser support
 
-ToolImage targets current versions of Chrome, Edge, Firefox, Safari, and the default browsers available on modern Windows, macOS, Linux, iOS, Android, and ChromeOS devices. It depends on standard browser features such as Canvas, Blob, File, and object URL APIs.
+ToolImage targets current versions of Chrome, Edge, Firefox, Safari, iOS Safari, Android Chrome, and ChromeOS browsers with Canvas, Blob, File, and object-URL support. On iPhone and iPad, the downloaded result can open in a new tab; users can long-press the image and choose **Save to Photos**.
 
 ## Roadmap
 
-Future work may include batch processing, saved presets, processing history, regional pricing selection, optional analytics abstraction, and premium export controls. These are intentionally not simulated in the current V1 release.
-
-## Quality checks performed
-
-The current build has passed TypeScript validation and a Vite production build. The live application was exercised for target-size compression, a YouTube-thumbnail resize preset, and local PNG-to-WebP conversion. Desktop and mobile layouts were reviewed across primary routes.
+Future work may include batch processing with browser-memory safeguards, saved local presets, optional privacy-preserving analytics, and a genuine paid workflow. These are not simulated in the current release.

@@ -1,0 +1,1 @@
+{"name":"ToolImage — Make the file fit.","short_name":"ToolImage","description":"Private browser-based image compression, resizing, and conversion.","start_url":"/","display":"standalone","background_color":"#F8F7F2","theme_color":"#0D786D","icons":[{"src":"/assets/toolimage-mark.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}

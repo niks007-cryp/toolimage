@@ -16,6 +16,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="site-shell">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="site-header">
         <div className="site-header__inner">
           <BrandMark />
@@ -44,7 +45,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <div className="footer-content">
           <div><BrandMark compact /><p>Made for files that need to fit.</p></div>
           <div className="footer-links"><Link href="/compress-image">Compress</Link><Link href="/resize-image">Resize</Link><Link href="/convert-image">Convert</Link><Link href="/pricing">Pricing</Link></div>
-          <div className="footer-links"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:hello@toolimage.app">Contact</a></div>
+          <div className="footer-links"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:hello@toolimage.io">Contact</a></div>
         </div>
         <div className="footer-bottom"><span>© {new Date().getFullYear()} ToolImage</span><span>Images are processed in your browser.</span></div>
       </footer>
