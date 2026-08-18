@@ -2,6 +2,7 @@
  * ToolImage workbench — Monochrome Instrument: direct local processing with only the controls needed now.
  */
 import { ChangeEvent, DragEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDownToLine, ArrowLeft, Check, ChevronDown, FileImage, ImageDown, LoaderCircle, LockKeyhole, RefreshCw, SlidersHorizontal, Upload, WandSparkles } from "lucide-react";
 import { ImageFormat, ImageJobResult, compressToTarget, convertImage, downloadResult, formatBytes, getFormatLabel, getImageDetails, ImageDetails, resizeImage } from "@/lib/imageProcessing";
 
@@ -16,6 +17,18 @@ const resizePresets = [
   { label: "Instagram post", width: 1080, height: 1080 }, { label: "Instagram story", width: 1080, height: 1920 },
   { label: "YouTube thumbnail", width: 1280, height: 720 }, { label: "LinkedIn post", width: 1200, height: 627 },
 ];
+
+const MAX_RESIZE_DIMENSION = 8000;
+
+function dimensionError(value: string, label: "Width" | "Height") {
+  const trimmed = value.trim();
+  if (!trimmed) return `${label} is required.`;
+  if (!/^\d+$/.test(trimmed)) return `${label} must be a whole number of pixels.`;
+  const pixels = Number(trimmed);
+  if (!Number.isSafeInteger(pixels) || pixels < 1) return `${label} must be at least 1 px.`;
+  if (pixels > MAX_RESIZE_DIMENSION) return `${label} must be ${MAX_RESIZE_DIMENSION.toLocaleString()} px or less.`;
+  return null;
+}
 
 const modeCopy = {
   compress: { action: "Compress", title: "Compress to a precise size.", helper: "Choose a target. We’ll preserve as much quality as possible." },
@@ -41,10 +54,11 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState(initialTargetBytes ?? 200 * 1024);
   const [customTarget, setCustomTarget] = useState("");
-  const [width, setWidth] = useState(1200);
-  const [height, setHeight] = useState(800);
+  const [width, setWidth] = useState("1200");
+  const [height, setHeight] = useState("800");
   const [keepRatio, setKeepRatio] = useState(true);
   const [format, setFormat] = useState<ImageFormat>("image/webp");
+  const [resizeSuccess, setResizeSuccess] = useState<{ width: number; height: number; blob: Blob; format: ImageFormat; name: string } | null>(null);
 
   useEffect(() => () => {
     if (originalPreviewRef.current) URL.revokeObjectURL(originalPreviewRef.current);
@@ -60,7 +74,7 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
     if (resultPreviewRef.current) URL.revokeObjectURL(resultPreviewRef.current);
     originalPreviewRef.current = null;
     resultPreviewRef.current = null;
-    setFile(null); setDetails(null); setOriginalPreview(null); setResult(null); setError(null); setProcessing(false);
+    setFile(null); setDetails(null); setOriginalPreview(null); setResult(null); setResizeSuccess(null); setError(null); setProcessing(false);
   };
 
   const applyFile = async (candidate?: File) => {
@@ -71,7 +85,7 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
       const previewUrl = URL.createObjectURL(candidate);
       originalPreviewRef.current = previewUrl;
       setFile(candidate); setDetails(imageDetails); setOriginalPreview(previewUrl);
-      setWidth(imageDetails.width); setHeight(imageDetails.height);
+      setWidth(String(imageDetails.width)); setHeight(String(imageDetails.height));
       setFormat(imageDetails.type === "image/png" ? "image/webp" : imageDetails.type);
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : "We couldn’t open that image.");
@@ -84,13 +98,18 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
   const drop = (event: DragEvent<HTMLDivElement>) => { event.preventDefault(); setIsDragging(false); applyFile(event.dataTransfer.files?.[0]); };
   const activateDropZone = (event: KeyboardEvent<HTMLDivElement>) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inputRef.current?.click(); } };
 
-  const updateWidth = (next: number) => {
+  const updateWidth = (next: string) => {
     setWidth(next);
-    if (keepRatio && details && next > 0) setHeight(Math.max(1, Math.round(next * details.height / details.width)));
+    if (keepRatio && details && /^\d+$/.test(next) && Number(next) > 0) setHeight(String(Math.max(1, Math.round(Number(next) * details.height / details.width))));
   };
-  const updateHeight = (next: number) => {
+  const updateHeight = (next: string) => {
     setHeight(next);
-    if (keepRatio && details && next > 0) setWidth(Math.max(1, Math.round(next * details.width / details.height)));
+    if (keepRatio && details && /^\d+$/.test(next) && Number(next) > 0) setWidth(String(Math.max(1, Math.round(Number(next) * details.width / details.height))));
+  };
+
+  const toggleRatio = () => {
+    if (!keepRatio && details && /^\d+$/.test(width) && Number(width) > 0) setHeight(String(Math.max(1, Math.round(Number(width) * details.height / details.width))));
+    setKeepRatio((state) => !state);
   };
 
   const processImage = async () => {
@@ -100,16 +119,31 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
     if (mode === "compress" && (!Number.isFinite(activeTarget) || activeTarget < 8 * 1024 || activeTarget > 10 * 1024 * 1024)) {
       setError("Enter a target between 8 KB and 10 MB."); return;
     }
-    if (mode === "resize" && (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1 || width > 8000 || height > 8000)) {
-      setError("Use dimensions between 1 and 8,000 pixels."); return;
+    const widthIssue = mode === "resize" ? dimensionError(width, "Width") : null;
+    const heightIssue = mode === "resize" ? dimensionError(height, "Height") : null;
+    if (widthIssue || heightIssue) {
+      setError(widthIssue || heightIssue); return;
     }
-    setError(null); setProcessing(true); setResult(null);
+    const requestedWidth = Number(width);
+    const requestedHeight = Number(height);
+    setError(null); setProcessing(true); setResult(null); setResizeSuccess(null);
     try {
       const processed = mode === "compress"
         ? await compressToTarget(file, activeTarget, details.type)
         : mode === "resize"
-          ? await resizeImage(file, width, height, details.type)
+          ? await resizeImage(file, requestedWidth, requestedHeight, details.type)
           : await convertImage(file, format);
+      if (mode === "resize") {
+        const extension = processed.format === "image/jpeg" ? "jpg" : processed.format.split("/")[1];
+        const verified = await getImageDetails(new File([processed.blob], `verified-resize.${extension}`, { type: processed.format }));
+        if (verified.width !== requestedWidth || verified.height !== requestedHeight) {
+          URL.revokeObjectURL(processed.previewUrl);
+          throw new Error("We couldn’t verify the requested output dimensions. Please try again.");
+        }
+        processed.width = verified.width;
+        processed.height = verified.height;
+        setResizeSuccess({ width: verified.width, height: verified.height, blob: processed.blob, format: processed.format, name: details.name });
+      }
       resultPreviewRef.current = processed.previewUrl;
       setResult(processed);
     } catch (issue) {
@@ -117,7 +151,7 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
     } finally { setProcessing(false); }
   };
 
-  const applyPreset = (preset: typeof resizePresets[number]) => { setWidth(preset.width); setHeight(preset.height); setKeepRatio(false); };
+  const applyPreset = (preset: typeof resizePresets[number]) => { setWidth(String(preset.width)); setHeight(String(preset.height)); setKeepRatio(false); };
   const comparisonPosition = result && details ? Math.max(20, Math.min(80, 50 + ((details.size - result.blob.size) / details.size) * 20)) : 50;
   const copy = modeCopy[mode];
 
@@ -162,7 +196,7 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
           <div className="file-readout"><div><span className="eyebrow">ORIGINAL</span><strong title={details.name}>{details.name}</strong></div><button type="button" aria-label="Choose another image" className="icon-button" onClick={() => inputRef.current?.click()}><RefreshCw size={16} /></button></div>
           <dl className="file-specs"><div><dt>File size</dt><dd>{formatBytes(details.size)}</dd></div><div><dt>Dimensions</dt><dd>{details.width.toLocaleString()} × {details.height.toLocaleString()}</dd></div><div><dt>Format</dt><dd>{getFormatLabel(details.type)}</dd></div></dl>
           {mode === "compress" && <div className="control-block"><div className="control-label"><span>Target size</span><small>Closest practical result</small></div><div className="target-grid">{targetOptions.map((option) => <button type="button" key={option.value} className={!customTarget && target === option.value ? "target-button is-selected" : "target-button"} onClick={() => { setTarget(option.value); setCustomTarget(""); }}>{option.label}</button>)}</div><label className="custom-target"><span>Custom</span><input aria-label="Custom target size in kilobytes" value={customTarget} onChange={(event) => setCustomTarget(event.target.value.replace(/[^0-9.]/g, ""))} placeholder="e.g. 350" inputMode="decimal" /><em>KB</em></label>{details.type === "image/png" && <p className="format-note">PNG has no browser quality setting. For a target size, ToolImage creates a compact WebP locally and keeps transparent areas where supported.</p>}</div>}
-          {mode === "resize" && <div className="control-block"><div className="control-label"><span>Dimensions</span><small>Pixels</small></div><div className="dimension-inputs"><label><span>Width</span><input aria-label="Width in pixels" type="number" value={width} min={1} max={8000} onChange={(event) => updateWidth(Number(event.target.value))} /></label><span className="dimension-times">×</span><label><span>Height</span><input aria-label="Height in pixels" type="number" value={height} min={1} max={8000} onChange={(event) => updateHeight(Number(event.target.value))} /></label></div><button type="button" className={keepRatio ? "ratio-toggle is-active" : "ratio-toggle"} onClick={() => setKeepRatio((state) => !state)}><span className="ratio-dot" /> Keep aspect ratio</button><div className="preset-row">{resizePresets.map((preset) => <button key={preset.label} type="button" onClick={() => applyPreset(preset)}>{preset.label}</button>)}</div></div>}
+          {mode === "resize" && <div className="control-block"><div className="control-label"><span>Exact dimensions</span><small>Whole pixels</small></div><div className="dimension-inputs"><label><span>Width</span><div className="pixel-field"><input aria-label="Width in pixels" type="text" inputMode="numeric" pattern="[0-9]*" value={width} onChange={(event) => updateWidth(event.target.value)} /><em>px</em></div>{dimensionError(width, "Width") && <small className="dimension-error">{dimensionError(width, "Width")}</small>}</label><span className="dimension-times">×</span><label><span>Height</span><div className="pixel-field"><input aria-label="Height in pixels" type="text" inputMode="numeric" pattern="[0-9]*" value={height} onChange={(event) => updateHeight(event.target.value)} /><em>px</em></div>{dimensionError(height, "Height") && <small className="dimension-error">{dimensionError(height, "Height")}</small>}</label></div><button type="button" className={keepRatio ? "ratio-toggle is-active" : "ratio-toggle"} aria-pressed={keepRatio} onClick={toggleRatio}><span className="ratio-dot" /> Maintain aspect ratio</button>{!keepRatio && <p className="dimension-warning">Aspect ratio is off. ToolImage will resize to these exact dimensions, which may stretch or crop the visual proportions.</p>}<div className="preset-row">{resizePresets.map((preset) => <button key={preset.label} type="button" onClick={() => applyPreset(preset)}>{preset.label}</button>)}</div></div>}
           {mode === "convert" && <div className="control-block"><div className="control-label"><span>Convert to</span><small>Your image remains local</small></div><div className="format-list">{(["image/jpeg", "image/png", "image/webp"] as ImageFormat[]).map((candidate) => <button type="button" key={candidate} className={format === candidate ? "format-option is-selected" : "format-option"} onClick={() => setFormat(candidate)}><span className="format-glyph">{getFormatLabel(candidate)}</span><span>{candidate === "image/jpeg" ? "Best for photos" : candidate === "image/png" ? "Keeps transparency" : "Small, modern format"}</span><Check size={16} /></button>)}</div></div>}
           {error && <div className="form-error" role="alert">{error}</div>}
           <button type="button" className="primary-button" disabled={processing} onClick={processImage}>{processing ? <><LoaderCircle className="spin" size={17} /> Processing locally</> : <>{mode === "compress" ? <WandSparkles size={17} /> : mode === "resize" ? <SlidersHorizontal size={17} /> : <ImageDown size={17} />}{copy.action}</>}</button>
@@ -170,6 +204,9 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
           <p className="control-note"><LockKeyhole size={13} /> The image never leaves this browser.</p>
         </aside>
       </div>
+      <AnimatePresence>
+        {mode === "resize" && resizeSuccess && <motion.div className="resize-success-backdrop" role="presentation" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}><motion.div className="resize-success-dialog" role="dialog" aria-modal="true" aria-labelledby="resize-success-title" initial={{ opacity: 0, scale: 0.97, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 6 }} transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}><span className="resize-success-mark"><Check size={18} /></span><p className="eyebrow">LOCAL RESIZE COMPLETE</p><h3 id="resize-success-title">Image resized successfully</h3><p className="resize-success-dimensions">{resizeSuccess.width.toLocaleString()} × {resizeSuccess.height.toLocaleString()} px</p><p>Your image was checked after processing to confirm the exact pixel dimensions.</p><div className="resize-success-actions"><button type="button" className="primary-button" onClick={() => downloadResult(resizeSuccess.blob, resizeSuccess.name, resizeSuccess.format)}><ArrowDownToLine size={16} /> Download Image</button><button type="button" className="text-button" onClick={reset}>Resize another</button></div></motion.div></motion.div>}
+      </AnimatePresence>
     </section>
   );
 }
