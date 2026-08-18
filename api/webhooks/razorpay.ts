@@ -1,7 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { apiError, readRaw } from "../_lib/http";
-import { adminSupabase } from "../_lib/supabase";
+import { apiError, readRaw } from "../_lib/http.js";
+import { adminSupabase } from "../_lib/supabase.js";
 
 export const config = { api: { bodyParser: false } };
 type Subscription = { id?: string; status?: string; customer_id?: string; plan_id?: string; current_end?: number };
