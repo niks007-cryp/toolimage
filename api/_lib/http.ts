@@ -1,0 +1,5 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+export function method(req: VercelRequest, res: VercelResponse, expected: string) { if (req.method === expected) return true; res.setHeader("Allow", expected); res.status(405).json({ error: "Method not allowed" }); return false; }
+export function apiError(res: VercelResponse, error: unknown, status = 400) { const message = error instanceof Error ? error.message : "Unexpected server error"; res.status(status).json({ error: message }); }
+export async function readJson(req: VercelRequest) { if (req.body && typeof req.body === "object") return req.body as Record<string, unknown>; const chunks: Buffer[] = []; for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)); return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>; }
+export async function readRaw(req: VercelRequest) { const chunks: Buffer[] = []; for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)); return Buffer.concat(chunks); }

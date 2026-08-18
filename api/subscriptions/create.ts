@@ -1,0 +1,7 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { isRegionalPriceId, REGIONAL_PRICE_CONFIG } from "../../shared/pricing";
+import { apiError, method, readJson } from "../_lib/http";
+import { planForCurrency, razorpay, razorpayKeyId } from "../_lib/razorpay";
+import { adminSupabase, requireUser } from "../_lib/supabase";
+
+export default async function handler(req: VercelRequest, res: VercelResponse) { if (!method(req, res, "POST")) return; try { const user = await requireUser(req); const body = await readJson(req); if (!isRegionalPriceId(body.region)) throw new Error("Choose a supported regional display."); const regional = REGIONAL_PRICE_CONFIG[body.region]; const planId = planForCurrency(regional.currency); const provider = razorpay(); const subscription = await provider.subscriptions.create({ plan_id: planId, total_count: 120, quantity: 1, customer_notify: 1, notes: { toolimage_user_id: user.id, display_region: body.region } }) as { id: string }; const { error } = await adminSupabase().from("payment_sessions").insert({ user_id: user.id, razorpay_subscription_id: subscription.id, razorpay_plan_id: planId, display_region: body.region }); if (error) throw error; res.status(201).json({ subscriptionId: subscription.id, keyId: razorpayKeyId(), name: "ToolImage Pro", description: `${regional.label} · Test Mode` }); } catch (error) { apiError(res, error, error instanceof Error && error.message === "Unauthorized" ? 401 : 500); } }
