@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { apiError, method, readJson } from "../_lib/http";
-import { adminSupabase, requireUser } from "../_lib/supabase";
+import { apiError, method, readJson } from "../_lib/http.js";
+import { adminSupabase, requireUser } from "../_lib/supabase.js";
 
 const activeStatuses = new Set(["active"]);
 function safeEquals(left: string, right: string) { const a = Buffer.from(left); const b = Buffer.from(right); return a.length === b.length && timingSafeEqual(a, b); }
