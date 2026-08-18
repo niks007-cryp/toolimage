@@ -1,25 +1,25 @@
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
+/** ToolImage homepage — Monochrome Instrument: an asymmetric editorial workbench makes the tool the hero. */
+import { ArrowDownRight, ArrowRight, Check, ChevronDown, ImageDown, Maximize2, ShieldCheck, Sparkles } from "lucide-react";
+import { Link } from "wouter";
+import { ImageStudio } from "@/components/ImageStudio";
+import { SiteShell } from "@/components/SiteShell";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Best Practices, Design Guide and Common Pitfalls
- */
+const HERO_ART = "/manus-storage/toolimage-hero-compression_ec9e1c4c.png";
+const COMPARISON_ART = "/manus-storage/toolimage-comparison-art_5d0042b9.png";
+const TEXTURE_ART = "/manus-storage/toolimage-texture-panel_16d6c94a.png";
+
 export default function Home() {
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
-    </div>
-  );
+  return <SiteShell><main>
+    <section className="hero-section" style={{ backgroundImage: `url(${HERO_ART})` }}>
+      <div className="hero-measure" aria-hidden="true"><span>01</span><i /><span>LOCAL IMAGE UTILITY</span></div>
+      <div className="hero-copy"><p className="eyebrow"><span className="teal-dot" /> TOOLIMAGE / BUILT TO FIT</p><h1>Make the<br /><em>file</em> fit.</h1><p className="hero-copy__body">Compress, resize, and convert images with precise local tools. No software. No uploads. No unnecessary settings.</p><div className="hero-copy__actions"><a href="#compressor" className="primary-button">Compress an image <ArrowDownRight size={17} /></a><span>JPG · PNG · WebP</span></div></div>
+      <div className="hero-claim"><ShieldCheck size={17} /><span><strong>Your images stay on your device.</strong> Processing happens in this browser.</span></div>
+    </section>
+    <section className="tool-section" id="compressor"><div className="section-rail"><span>01</span><i /><span>COMPRESS</span><small>SET THE SIZE. KEEP THE IMAGE.</small></div><ImageStudio mode="compress" /></section>
+    <section className="how-section" style={{ backgroundImage: `url(${TEXTURE_ART})` }}><div className="section-rail"><span>02</span><i /><span>HOW IT WORKS</span></div><div className="how-layout"><div className="section-intro"><p className="eyebrow">A SMALLER FILE, IN THREE MOVES</p><h2>Nothing more than<br />you need.</h2></div><ol className="steps-list"><li><span>01</span><div><strong>Choose an image</strong><p>Drop a JPG, PNG, or WebP into the workbench.</p></div></li><li><span>02</span><div><strong>Set the outcome</strong><p>Pick a size, dimension, or file format that works.</p></div></li><li><span>03</span><div><strong>Keep moving</strong><p>Download the result as soon as it is ready.</p></div></li></ol></div></section>
+    <section className="tools-section"><div className="section-rail"><span>03</span><i /><span>TOOLS</span><small>ONE JOB. WELL DONE.</small></div><div className="tool-cards"><Link href="/compress-image" className="tool-card tool-card--compress"><span className="tool-icon"><Sparkles size={21} /></span><div><p className="eyebrow">01 / COMPRESS</p><h3>Fit your file.</h3><p>Target a specific size without casually sacrificing quality.</p></div><ArrowRight className="tool-arrow" size={21} /></Link><Link href="/resize-image" className="tool-card"><span className="tool-icon"><Maximize2 size={21} /></span><div><p className="eyebrow">02 / RESIZE</p><h3>Shape your image.</h3><p>Set the right dimensions or begin with a useful preset.</p></div><ArrowRight className="tool-arrow" size={21} /></Link><Link href="/convert-image" className="tool-card"><span className="tool-icon"><ImageDown size={21} /></span><div><p className="eyebrow">03 / CONVERT</p><h3>Change the format.</h3><p>Move between JPG, PNG, and WebP with a single local conversion.</p></div><ArrowRight className="tool-arrow" size={21} /></Link></div></section>
+    <section className="comparison-section"><div className="comparison-art"><img src={COMPARISON_ART} alt="Abstract composition representing an image becoming smaller" /><div className="comparison-art__label"><span>2.84 MB</span><i /><span>184 KB</span></div></div><div className="comparison-copy"><p className="eyebrow">BEFORE / AFTER</p><h2>Smaller files.<br />Still your image.</h2><p>ToolImage iterates locally through quality and dimensions to get close to the target without making the file needlessly rough.</p><ul><li><Check size={16} /> Target-size compression</li><li><Check size={16} /> Practical quality decisions</li><li><Check size={16} /> No server upload</li></ul><Link href="/compress-image" className="text-link">Try the compressor <ArrowRight size={16} /></Link></div></section>
+    <section className="faq-section"><div className="section-rail"><span>04</span><i /><span>COMMON QUESTIONS</span></div><div className="faq-layout"><h2>Good to know<br />before you begin.</h2><div className="faq-list"><details open><summary>Are my images uploaded to a server?<ChevronDown size={17} /></summary><p>No. ToolImage processes supported images in the browser on your own device. Your file does not need to travel to a server for compression, resizing, or conversion.</p></details><details><summary>Can I compress an image to 20 KB?<ChevronDown size={17} /></summary><p>Yes, you can request 20 KB. When that target would severely affect image quality, ToolImage creates the smallest practical version and explains the result.</p></details><details><summary>Which formats can I use?<ChevronDown size={17} /></summary><p>ToolImage currently supports JPG, JPEG, PNG, and WebP files.</p></details><details><summary>Will this work on my phone?<ChevronDown size={17} /></summary><p>Yes. ToolImage is a responsive browser application designed for modern mobile, tablet, and desktop browsers.</p></details></div></div></section>
+    <section className="closing-section"><div><p className="eyebrow">TOOLIMAGE / READY WHEN YOU ARE</p><h2>Make your next<br /><em>image</em> smaller.</h2></div><Link href="/compress-image" className="primary-button">Compress an image <ArrowRight size={17} /></Link></section>
+  </main></SiteShell>;
 }
