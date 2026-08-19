@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://toolimage.io/sitemap.xml
+Sitemap: https://toolimage.online/sitemap.xml

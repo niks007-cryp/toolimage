@@ -1,5 +1,5 @@
 /** ToolImage SEO registry — one canonical source for route-specific metadata and useful keyword-page copy. */
-export const SITE_URL = "https://toolimage.io";
+export const SITE_URL = "https://toolimage.online";
 export const DEFAULT_SOCIAL_IMAGE = "/assets/toolimage-hero-compression.webp";
 export interface PageSeo { title: string; description: string; path: string; heading?: React.ReactNode; guideTitle?: string; guide?: string; targetBytes?: number; detail?: string; }
 export const SEO_PAGES = {

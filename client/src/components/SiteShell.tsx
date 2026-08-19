@@ -58,7 +58,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <div className="footer-content">
           <div><BrandMark compact /><p>Made for files that need to fit.</p></div>
           <div className="footer-links"><Link href="/compress-image">Compress</Link><Link href="/resize-image">Resize</Link><Link href="/convert-image">Convert</Link><Link href="/tools">All tools</Link></div>
-          <div className="footer-links"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:hello@toolimage.io">Contact</a></div>
+          <div className="footer-links"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:support@toolimage.online">Contact</a></div>
         </div>
         <div className="footer-bottom"><span>© {new Date().getFullYear()} ToolImage</span><span>Images are processed in your browser.</span></div>
       </footer>
