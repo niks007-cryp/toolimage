@@ -88,7 +88,7 @@ export function ProAccessPanel({ compact = false }: { compact?: boolean }) {
       <div>
         <p className="eyebrow">TOOLIMAGE PRO</p>
         <h2>Process multiple images at once.</h2>
-        <p>Sign in securely to begin a ToolImage Pro Test Mode subscription.</p>
+        <p>Sign in securely to view ToolImage Pro and manage a verified subscription.</p>
         <button
           type="button"
           className="primary-button mt-5 flex w-full max-w-[510px] justify-center !bg-[#fffefa] !text-[#1f2823] ring-1 ring-[#90a99f] shadow-[inset_0_0_0_1px_#ffffff] hover:!bg-[#f0f6f3]"

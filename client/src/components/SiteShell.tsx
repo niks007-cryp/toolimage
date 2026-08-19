@@ -1,12 +1,13 @@
 /** ToolImage site shell — Monochrome Instrument: warm paper field, measured rules, calm navigation. */
 /** ToolImage shell — Monochrome Instrument navigation: editorial restraint, generous breathing room, and functional teal calls to action. */
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { Check, LogIn, LogOut, Menu, Moon, Sun, UserRound, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { ReactNode, useRef, useState } from "react";
 import { BrandMark } from "./BrandMark";
 import { SupportModal } from "./SupportModal";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useEntitlement } from "@/contexts/EntitlementContext";
 
 const nav = [
   { href: "/compress-image", label: "Compress" },
@@ -23,8 +24,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [supportOpen, setSupportOpen] = useState(false);
   const supportTriggerRef = useRef<HTMLButtonElement>(null);
   const { theme, toggleTheme } = useTheme();
+  const { user, isPro, loading: entitlementLoading, signOut } = useEntitlement();
   const reduceMotion = useReducedMotion();
   const transition = { duration: reduceMotion ? 0 : 0.22, ease: [0.23, 1, 0.32, 1] as const };
+  const handleSignOut = async () => {
+    await signOut();
+    setOpen(false);
+  };
   return (
     <div className="site-shell">
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -36,9 +42,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
               <Link key={item.href} href={item.href} className={location === item.href ? "nav-link is-active" : "nav-link"}>{item.label}</Link>
             ))}
           </nav>
+          {!entitlementLoading && user && <span className="account-indicator" aria-label="Signed in"><UserRound size={14} aria-hidden="true" /><span>Account</span></span>}
+          {!entitlementLoading && isPro && <Link href="/subscription" className="pro-status" aria-label="Manage verified Pro membership"><Check size={11} aria-hidden="true" /><span>Pro</span></Link>}
           <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-pressed={theme === "dark"} title={theme === "dark" ? "Light mode" : "Dark mode"}>
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}<span className="sr-only">{theme === "dark" ? "Light mode" : "Dark mode"}</span>
           </button>
+          {!entitlementLoading && user ? <button type="button" className="header-account-action" onClick={() => void handleSignOut()}><LogOut size={14} aria-hidden="true" /> Sign out</button> : !entitlementLoading ? <Link href="/pricing" className="header-account-action"><LogIn size={14} aria-hidden="true" /> Sign in</Link> : null}
           <Link href="/compress-image" className="header-cta">Get started</Link>
           <button className="menu-button" type="button" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-site-menu" onClick={() => setOpen((value) => !value)}>
             {open ? <X size={21} /> : <Menu size={21} />}
@@ -50,6 +59,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
             {nav.map((item, index) => (
               <motion.div key={item.href} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ ...transition, delay: reduceMotion ? 0 : index * 0.025 }}><Link href={item.href} className={location === item.href ? "nav-link is-active" : "nav-link"} onClick={() => setOpen(false)}>{item.label}</Link></motion.div>
             ))}
+            {!entitlementLoading && user && <div className="mobile-account-state"><UserRound size={14} aria-hidden="true" /><span>Signed in</span>{isPro && <Link href="/subscription" onClick={() => setOpen(false)}><Check size={12} aria-hidden="true" /> Pro</Link>}</div>}
+            {!entitlementLoading && user && <button type="button" className="mobile-account-action" onClick={() => void handleSignOut()}><LogOut size={15} aria-hidden="true" /> Sign out</button>}
+            {!entitlementLoading && !user && <Link href="/pricing" className="mobile-account-action" onClick={() => setOpen(false)}><LogIn size={15} aria-hidden="true" /> Sign in</Link>}
             <button className="theme-toggle theme-toggle--mobile" type="button" onClick={toggleTheme} aria-pressed={theme === "dark"}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />} {theme === "dark" ? "Use light mode" : "Use dark mode"}</button>
             <Link href="/compress-image" className="header-cta" onClick={() => setOpen(false)}>Get started</Link>
           </motion.nav>}
