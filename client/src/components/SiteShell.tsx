@@ -3,8 +3,9 @@
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Link, useLocation } from "wouter";
-import { ReactNode, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 import { BrandMark } from "./BrandMark";
+import { SupportModal } from "./SupportModal";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const nav = [
@@ -19,6 +20,8 @@ const nav = [
 export function SiteShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const supportTriggerRef = useRef<HTMLButtonElement>(null);
   const { theme, toggleTheme } = useTheme();
   const reduceMotion = useReducedMotion();
   const transition = { duration: reduceMotion ? 0 : 0.22, ease: [0.23, 1, 0.32, 1] as const };
@@ -58,10 +61,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <div className="footer-content">
           <div><BrandMark compact /><p>Made for files that need to fit.</p></div>
           <div className="footer-links"><Link href="/compress-image">Compress</Link><Link href="/resize-image">Resize</Link><Link href="/convert-image">Convert</Link><Link href="/tools">All tools</Link></div>
-          <div className="footer-links"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:support@toolimage.online">Contact</a></div>
+          <div className="footer-links"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
+          <div className="footer-links footer-links--support"><span>SUPPORT</span><button ref={supportTriggerRef} type="button" onClick={() => setSupportOpen(true)}>Contact &amp; Support</button></div>
         </div>
         <div className="footer-bottom"><span>© {new Date().getFullYear()} ToolImage</span><span>Images are processed in your browser.</span></div>
       </footer>
+      <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} returnFocusRef={supportTriggerRef} />
     </div>
   );
 }
