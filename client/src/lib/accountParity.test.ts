@@ -12,6 +12,7 @@ describe("account, subscription, and batch parity contracts", () => {
   const subscription = source("client/src/pages/Subscription.tsx");
   const pricing = source("client/src/pages/Pricing.tsx");
   const welcomeCard = source("client/src/components/ProWelcomeCard.tsx");
+  const scrollRestoration = source("client/src/components/ScrollRestoration.tsx");
 
   it("renders authenticated account state and global sign out without exposing the user email", () => {
     expect(shell).toContain('useEntitlement()');
@@ -33,8 +34,8 @@ describe("account, subscription, and batch parity contracts", () => {
     expect(shell).toContain('window.location.hash = "sign-in"');
     expect(accessPanel).toContain('window.location.assign("/pricing#sign-in")');
     expect(accessPanel).toContain('id="sign-in"');
-    expect(pricing).toContain('document.getElementById("sign-in")?.scrollIntoView');
-    expect(pricing).toContain('window.addEventListener("hashchange", revealSignIn)');
+    expect(scrollRestoration).toContain('document.getElementById(action.id)?.scrollIntoView');
+    expect(scrollRestoration).toContain('window.addEventListener("hashchange", restoreHashTarget)');
   });
 
   it("shows the Pro badge only when the existing server-confirmed entitlement derives isPro", () => {
