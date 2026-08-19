@@ -30,6 +30,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const handleSignOut = async () => {
     await signOut();
     setOpen(false);
+    window.location.assign("/pricing#sign-in");
+  };
+  const revealSignIn = () => {
+    if (window.location.pathname === "/pricing") window.location.hash = "sign-in";
   };
   return (
     <div className="site-shell">
@@ -47,7 +51,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-pressed={theme === "dark"} title={theme === "dark" ? "Light mode" : "Dark mode"}>
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}<span className="sr-only">{theme === "dark" ? "Light mode" : "Dark mode"}</span>
           </button>
-          {!entitlementLoading && user ? <button type="button" className="header-account-action" onClick={() => void handleSignOut()}><LogOut size={14} aria-hidden="true" /> Sign out</button> : !entitlementLoading ? <Link href="/pricing" className="header-account-action"><LogIn size={14} aria-hidden="true" /> Sign in</Link> : null}
+          {!entitlementLoading && user ? <button type="button" className="header-account-action" onClick={() => void handleSignOut()}><LogOut size={14} aria-hidden="true" /> Sign out</button> : !entitlementLoading ? <Link href="/pricing#sign-in" className="header-account-action" onClick={revealSignIn}><LogIn size={14} aria-hidden="true" /> Sign in</Link> : null}
           <Link href="/compress-image" className="header-cta">Get started</Link>
           <button className="menu-button" type="button" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-site-menu" onClick={() => setOpen((value) => !value)}>
             {open ? <X size={21} /> : <Menu size={21} />}
@@ -61,7 +65,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             ))}
             {!entitlementLoading && user && <div className="mobile-account-state"><UserRound size={14} aria-hidden="true" /><span>Signed in</span>{isPro && <Link href="/subscription" onClick={() => setOpen(false)}><Check size={12} aria-hidden="true" /> Pro</Link>}</div>}
             {!entitlementLoading && user && <button type="button" className="mobile-account-action" onClick={() => void handleSignOut()}><LogOut size={15} aria-hidden="true" /> Sign out</button>}
-            {!entitlementLoading && !user && <Link href="/pricing" className="mobile-account-action" onClick={() => setOpen(false)}><LogIn size={15} aria-hidden="true" /> Sign in</Link>}
+            {!entitlementLoading && !user && <Link href="/pricing#sign-in" className="mobile-account-action" onClick={() => { setOpen(false); revealSignIn(); }}><LogIn size={15} aria-hidden="true" /> Sign in</Link>}
             <button className="theme-toggle theme-toggle--mobile" type="button" onClick={toggleTheme} aria-pressed={theme === "dark"}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />} {theme === "dark" ? "Use light mode" : "Use dark mode"}</button>
             <Link href="/compress-image" className="header-cta" onClick={() => setOpen(false)}>Get started</Link>
           </motion.nav>}

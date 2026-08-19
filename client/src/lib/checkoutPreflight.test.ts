@@ -14,6 +14,12 @@ describe("checkout preflight", () => {
     expect(request).toHaveBeenCalledWith("/api/subscriptions/create", expect.objectContaining({ method: "POST", headers: expect.objectContaining({ Authorization: "Bearer opaque-test-token" }) }));
   });
 
+  it("retains the server-error state instead of treating an error response as Pro access", async () => {
+    const request = vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "Server Error" }) });
+    await expect(createCheckout("opaque-test-token", request)).rejects.toMatchObject<Partial<CheckoutPreflightError>>({ message: "Server Error" });
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects an incomplete checkout payload rather than opening a provider dialog", async () => {
     const request = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ keyId: "public-key-only" }) });
     await expect(createCheckout("opaque-test-token", request)).rejects.toThrow("Checkout could not be prepared.");

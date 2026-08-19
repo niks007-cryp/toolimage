@@ -23,6 +23,11 @@ export function ProAccessPanel({ compact = false }: { compact?: boolean }) {
   const [googleSigningIn, setGoogleSigningIn] = useState(false);
   const [checking, setChecking] = useState(false);
 
+  const leaveAccount = async () => {
+    await signOut();
+    window.location.assign("/pricing#sign-in");
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -67,23 +72,23 @@ export function ProAccessPanel({ compact = false }: { compact?: boolean }) {
   };
 
   if (loading) {
-    return <section className="pro-access-panel" aria-live="polite"><LoaderCircle className="spin" size={18} /><p>Checking secure account access…</p></section>;
+    return <section id="sign-in" className="pro-access-panel" aria-live="polite"><LoaderCircle className="spin" size={18} /><p>Checking secure account access…</p></section>;
   }
 
   if (!configured) {
-    return <section className="pro-access-panel"><LockKeyhole size={19} /><div><p className="eyebrow">TOOLIMAGE PRO</p><h2>Secure access is being configured.</h2><p>Free image tools remain available without an account.</p></div></section>;
+    return <section id="sign-in" className="pro-access-panel"><LockKeyhole size={19} /><div><p className="eyebrow">TOOLIMAGE PRO</p><h2>Secure access is being configured.</h2><p>Free image tools remain available without an account.</p></div></section>;
   }
 
   if (isPro) {
-    return <section className="pro-access-panel pro-access-panel--active"><Check size={19} /><div><p className="eyebrow">TOOLIMAGE PRO ACTIVE</p><h2>{status === "grace" ? "Your billing period remains active." : "Welcome to ToolImage Pro."}</h2><p>Batch processing, custom presets, and ZIP downloads are available in this browser session.</p></div></section>;
+    return <section id="sign-in" className="pro-access-panel pro-access-panel--active"><Check size={19} /><div><p className="eyebrow">TOOLIMAGE PRO ACTIVE</p><h2>{status === "grace" ? "Your billing period remains active." : "Welcome to ToolImage Pro."}</h2><p>Batch processing, custom presets, and ZIP downloads are available in this browser session.</p></div></section>;
   }
 
   if (user) {
-    return <section className="pro-access-panel"><LockKeyhole size={19} /><div><p className="eyebrow">TOOLIMAGE PRO</p><h2>Process multiple images at once.</h2><p>Batch processing, custom presets, and ZIP downloads are available after a verified Pro subscription.</p><Link href="/pricing" className="primary-button">Upgrade to Pro</Link><button type="button" className="text-button" onClick={() => void signOut()}><LogOut size={14} /> Sign out</button></div></section>;
+    return <section id="sign-in" className="pro-access-panel"><LockKeyhole size={19} /><div><p className="eyebrow">TOOLIMAGE PRO</p><h2>Process multiple images at once.</h2><p>Batch processing, custom presets, and ZIP downloads are available after a verified Pro subscription.</p><Link href="/pricing" className="primary-button">Upgrade to Pro</Link><button type="button" className="text-button" onClick={() => void leaveAccount()}><LogOut size={14} /> Sign out</button></div></section>;
   }
 
   return (
-    <section className={`pro-access-panel ${compact ? "pro-access-panel--compact" : ""}`}>
+    <section id="sign-in" className={`pro-access-panel ${compact ? "pro-access-panel--compact" : ""}`}>
       <Mail size={19} />
       <div>
         <p className="eyebrow">TOOLIMAGE PRO</p>
