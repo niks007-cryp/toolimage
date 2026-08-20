@@ -53,6 +53,11 @@ describe("shared premium page transition policy", () => {
     expect(controller).toContain("if (reduceMotion)");
     expect(controller).toContain("PAGE_TRANSITION_TIMING.reduced");
     expect(styles).toContain('.page-transition-root[data-transition-phase="outgoing"] .page-transition-stage');
+    expect(styles).toContain("scale(.9468)");
+    expect(styles).toContain("scale(.916)");
+    expect(styles).toContain("font-size: clamp(56px, 12vw, 160px)");
+    expect(styles).toContain("max-width: min(calc(100vw - 32px), 40rem)");
+    expect(styles).toContain("@media (max-width: 520px)");
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
   });
 });
