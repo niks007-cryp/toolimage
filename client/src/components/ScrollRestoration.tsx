@@ -20,10 +20,17 @@ function persistScrollPosition() {
   window.history.replaceState({ ...state, [scrollStateKey]: { left: window.scrollX, top: window.scrollY } satisfies ScrollPosition }, "", window.location.href);
 }
 
-function applyScrollAction(isHistoryNavigation: boolean) {
+function applyScrollAction(isHistoryNavigation: boolean, anchorAttempts = 0) {
   const action = routeScrollAction({ hash: window.location.hash, isHistoryNavigation, savedPosition: savedScrollPosition() });
   if (action.kind === "anchor") {
-    document.getElementById(action.id)?.scrollIntoView({ block: "start", behavior: "instant" });
+    const target = document.getElementById(action.id);
+    if (target) {
+      target.scrollIntoView({ block: "start", behavior: "instant" });
+      return;
+    }
+    // A lazy destination can mount after the URL changes. Retry only the shared hash action
+    // for a bounded number of animation frames so hash semantics remain reliable.
+    if (anchorAttempts < 90) window.requestAnimationFrame(() => applyScrollAction(isHistoryNavigation, anchorAttempts + 1));
     return;
   }
   if (action.kind === "restore") {
@@ -40,14 +47,16 @@ export function ScrollRestoration() {
   useEffect(() => {
     if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
 
-    let frame = 0;
+    let saveTimer = 0;
     let historyFrame = 0;
     const save = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
+      if (saveTimer) return;
+      // Scroll events can fire at display refresh rate. A passive trailing save keeps history
+      // restoration accurate without calling history.replaceState on every scrolling frame.
+      saveTimer = window.setTimeout(() => {
+        saveTimer = 0;
         persistScrollPosition();
-      });
+      }, 120);
     };
     const markHistoryNavigation = () => {
       isHistoryNavigation.current = true;
@@ -78,7 +87,7 @@ export function ScrollRestoration() {
     window.addEventListener("popstate", markHistoryNavigation);
     window.addEventListener("hashchange", restoreHashTarget);
     return () => {
-      if (frame) window.cancelAnimationFrame(frame);
+      if (saveTimer) window.clearTimeout(saveTimer);
       if (historyFrame) window.cancelAnimationFrame(historyFrame);
       window.removeEventListener("scroll", save);
       window.removeEventListener("beforeunload", persistScrollPosition);

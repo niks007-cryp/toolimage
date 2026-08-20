@@ -34,7 +34,8 @@ describe("account, subscription, and batch parity contracts", () => {
     expect(shell).toContain('window.location.hash = "sign-in"');
     expect(accessPanel).toContain('window.location.assign("/pricing#sign-in")');
     expect(accessPanel).toContain('id="sign-in"');
-    expect(scrollRestoration).toContain('document.getElementById(action.id)?.scrollIntoView');
+    expect(scrollRestoration).toContain('const target = document.getElementById(action.id)');
+    expect(scrollRestoration).toContain('target.scrollIntoView({ block: "start", behavior: "instant" })');
     expect(scrollRestoration).toContain('window.addEventListener("hashchange", restoreHashTarget)');
   });
 

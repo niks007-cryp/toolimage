@@ -30,13 +30,17 @@ describe("shared navigation and scroll restoration", () => {
     const pricing = source("client/src/pages/Pricing.tsx");
     const restoration = source("client/src/components/ScrollRestoration.tsx");
     expect(app).toContain("<ScrollRestoration />");
-    expect(app).toContain("<><ScrollRestoration /><Suspense");
+    expect(app).toContain("<><ScrollRestoration /><PageTransition><Suspense");
     expect(restoration).toContain('window.history.scrollRestoration = "manual"');
     expect(restoration).toContain('window.addEventListener("click", persistBeforeInternalNavigation, true)');
     expect(restoration).toContain('window.addEventListener("popstate", markHistoryNavigation)');
     expect(restoration).toContain('window.addEventListener("hashchange", restoreHashTarget)');
+    expect(restoration).toContain("A passive trailing save keeps history");
+    expect(restoration).toContain("}, 120)");
     expect(restoration).toContain("applyScrollAction(true)");
     expect(restoration).toContain('behavior: "instant"');
+    expect(restoration).toContain("anchorAttempts < 90");
+    expect(restoration).toContain("A lazy destination can mount after the URL changes");
     expect(pricing).not.toContain("window.addEventListener(\"hashchange\", revealSignIn)");
   });
 });
