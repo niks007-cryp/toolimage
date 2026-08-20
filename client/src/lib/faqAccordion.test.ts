@@ -28,4 +28,13 @@ describe("shared FAQ accordion", () => {
     expect(styles).toContain(".faq-item.is-open .faq-answer { grid-template-rows: 1fr; }");
     expect(styles).toContain(".faq-answer > div { min-height: 0; overflow: hidden; }");
   });
+
+  it("owns Common Questions Dark Mode foregrounds through scoped semantic FAQ variables", () => {
+    const styles = source("client/src/index.css");
+    expect(styles).toContain(".dark .faq-section { --faq-foreground: #edf4ee; --faq-muted-foreground: #b7c3ba; --faq-divider: #39473e; --faq-focus: #62c3b4; }");
+    expect(styles).toContain(".dark .faq-section .section-rail, .dark .faq-section .faq-list p { color: var(--faq-muted-foreground); }");
+    expect(styles).toContain(".dark .faq-section .faq-layout h2, .dark .faq-section .faq-trigger { color: var(--faq-foreground); }");
+    expect(styles).toContain(".dark .faq-section .faq-list, .dark .faq-section .faq-item { border-color: var(--faq-divider); }");
+    expect(styles).toContain(".dark .faq-section .faq-trigger:focus-visible { outline-color: var(--faq-focus); }");
+  });
 });

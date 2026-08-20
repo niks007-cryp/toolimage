@@ -16,6 +16,10 @@ describe("shared tool-card CTA flow", () => {
     expect(styles).toContain(".tool-arrow { align-self: flex-end; color: #0d786d; flex: 0 0 auto; margin-top: auto; position: static;");
   });
 
+  it("gives every shared Home card label block a deliberate icon-to-copy gap", () => {
+    expect(styles).toContain(".tool-icon + div { margin-top: 10px; }");
+  });
+
   it("covers the shared Home and Tool-index card consumers", () => {
     expect(home).toContain('className="tool-card tool-card--compress"');
     expect(tools).toContain('className="info-tool-card"');
