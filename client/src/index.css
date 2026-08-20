@@ -101,8 +101,10 @@ a { color: inherit; text-decoration: none; } img { display: block; max-width: 10
 
 /* The React-controlled FAQ uses button/article markup, so its Dark Mode foreground ownership must not rely on legacy details/summary selectors. */
 .dark .faq-section { --faq-foreground: #edf4ee; --faq-muted-foreground: #b7c3ba; --faq-divider: #39473e; --faq-focus: #62c3b4; }
-.dark .faq-section .section-rail, .dark .faq-section .faq-list p { color: var(--faq-muted-foreground); }
+.dark .faq-section .section-rail { color: var(--faq-muted-foreground); }
 .dark .faq-section .faq-layout h2, .dark .faq-section .faq-trigger { color: var(--faq-foreground); }
+.dark .faq-section .faq-answer > div > p { color: var(--faq-muted-foreground); }
 .dark .faq-section .faq-list, .dark .faq-section .faq-item { border-color: var(--faq-divider); }
 .dark .faq-section .faq-trigger:hover { color: var(--faq-foreground); }
 .dark .faq-section .faq-trigger:focus-visible { outline-color: var(--faq-focus); }
+.faq-item.is-open .faq-answer p { opacity: 1; transform: translateY(0); }
