@@ -1,1 +1,38 @@
-{"framework":"vite","buildCommand":"pnpm build","outputDirectory":"dist/public","rewrites":[{"source":"/api/(.*)","destination":"/api/$1"},{"source":"/(.*)","destination":"/index.html"}]}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist/public",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), geolocation=(), microphone=()" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/compress-image", "destination": "/compress-image.html" },
+    { "source": "/compress-jpg", "destination": "/compress-jpg.html" },
+    { "source": "/compress-png", "destination": "/compress-png.html" },
+    { "source": "/compress-webp", "destination": "/compress-webp.html" },
+    { "source": "/compress-image-to-20kb", "destination": "/compress-image-to-20kb.html" },
+    { "source": "/compress-image-to-50kb", "destination": "/compress-image-to-50kb.html" },
+    { "source": "/compress-image-to-100kb", "destination": "/compress-image-to-100kb.html" },
+    { "source": "/compress-image-to-200kb", "destination": "/compress-image-to-200kb.html" },
+    { "source": "/resize-image", "destination": "/resize-image.html" },
+    { "source": "/convert-image", "destination": "/convert-image.html" },
+    { "source": "/tools", "destination": "/tools.html" },
+    { "source": "/about", "destination": "/about.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/pricing", "destination": "/pricing.html" },
+    { "source": "/batch", "destination": "/batch.html" },
+    { "source": "/subscription", "destination": "/subscription.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

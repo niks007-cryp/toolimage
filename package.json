@@ -1,1 +1,39 @@
-{"name":"toolimage","version":"1.0.0","private":false,"type":"module","license":"MIT","scripts":{"dev":"vite --host","build":"vite build","preview":"vite preview --host","check":"tsc --noEmit","test":"vitest run","format":"prettier --write ."},"dependencies":{"@supabase/supabase-js":"^2.112.3","framer-motion":"^13.1.0","jszip":"^3.10.1","lucide-react":"^0.453.0","razorpay":"^2.9.8","react":"^19.2.1","react-dom":"^19.2.1","wouter":"^3.5"},"devDependencies":{"@tailwindcss/vite":"^4.1.3","@types/node":"^24.7.0","@types/react":"^19.2.1","@types/react-dom":"^19.2.1","@vercel/node":"^5.10.1","@vitejs/plugin-react":"^5.0.4","prettier":"^3.6.2","tailwindcss":"^4.1.14","typescript":"5.6.3","vite":"^7.1.7","vitest":"^4.1.11"},"packageManager":"pnpm@10.4.1"}
+{
+  "name": "toolimage",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build && node scripts/generate-crawlable-html.mjs && node scripts/verify-crawlable-html.mjs",
+    "preview": "vite preview --host",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
+    "framer-motion": "^13.1.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.453.0",
+    "razorpay": "^2.9.8",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "wouter": "^3.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.3",
+    "@types/node": "^24.7.0",
+    "@types/react": "^19.2.1",
+    "@types/react-dom": "^19.2.1",
+    "@vercel/node": "^5.10.1",
+    "@vitejs/plugin-react": "^5.0.4",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4.1.14",
+    "typescript": "5.6.3",
+    "vite": "^7.1.7",
+    "vitest": "^4.1.11"
+  },
+  "packageManager": "pnpm@10.4.1"
+}
