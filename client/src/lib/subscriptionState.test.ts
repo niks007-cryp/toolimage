@@ -20,8 +20,8 @@ describe("ToolImage Pro Live subscription state", () => {
     expect(subscriptionPresentation({ id: "sub_active", status: "active", has_scheduled_changes: true, current_end: future })).toMatchObject({ status: "cancellation_pending", cancellationPending: true, entitlementStatus: "pro" });
   });
   it("maps cancelled, expired, and payment-problem provider states honestly", () => {
-    expect(subscriptionPresentation({ status: "cancelled", current_end: future }).status).toBe("cancelled");
-    expect(subscriptionPresentation({ status: "expired", current_end: past }).status).toBe("expired");
+    expect(subscriptionPresentation({ status: "cancelled", current_end: future })).toMatchObject({ status: "cancellation_pending", entitlementStatus: "grace" });
+    expect(subscriptionPresentation({ status: "expired", current_end: past }).status).toBe("ended");
     expect(subscriptionPresentation({ status: "pending", current_end: future })).toMatchObject({ status: "payment_issue", entitlementStatus: "grace" });
     expect(entitlementStatusForProvider("pending", past)).toBe("inactive");
   });

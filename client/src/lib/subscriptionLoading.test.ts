@@ -15,7 +15,8 @@ describe("subscription loading resilience", () => {
   it("bounds subscription status loading and surfaces a retryable error instead of a permanent checker", () => {
     const subscription = source("client/src/pages/Subscription.tsx");
     expect(subscription).toContain('fetchWithTimeout("/api/subscriptions/status"');
-    expect(subscription).toContain('"Subscription check timed out. Please try again."');
+    expect(subscription).toContain("We’re having trouble verifying your subscription. Please try again later.");
+    expect(subscription).toContain("const retry = () => { if (!loading) setRetryKey");
     expect(subscription).toContain("if (isCurrent()) setLoading(false);");
   });
 
@@ -24,7 +25,7 @@ describe("subscription loading resilience", () => {
     const initialLoad = subscription.split("const cancel =")[0];
     expect(subscription).toContain("const userId = user?.id ?? null;");
     expect(subscription).toContain("const accessToken = session?.access_token;");
-    expect(subscription).toContain("}, [userId, accessToken]);");
+    expect(subscription).toContain("}, [userId, accessToken, retryKey]);");
     expect(subscription).not.toContain("}, [user]);");
     expect(initialLoad).not.toContain("const session = await refresh();");
   });
@@ -43,7 +44,7 @@ describe("subscription loading resilience", () => {
     expect(subscription).toContain("if (!userId)");
     expect(subscription).toContain("if (!accessToken)");
     expect(subscription).toContain("setSubscription(body.subscription ?? null);");
-    expect(subscription).toContain("setError(issue instanceof Error");
+    expect(subscription).toContain("setError(SAFE_VERIFICATION_MESSAGE);");
     expect(subscription).not.toContain("setInterval(");
     expect(subscription).not.toContain("setTimeout(() => void");
   });

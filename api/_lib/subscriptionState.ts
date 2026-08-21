@@ -8,38 +8,103 @@ export type ProviderSubscription = {
   change_scheduled_at?: string | null;
 };
 
-export type SubscriptionPresentationStatus = "active" | "cancellation_pending" | "cancelled" | "expired" | "payment_issue" | "inactive";
+export type SubscriptionLifecycle = "active" | "cancel_at_cycle_end" | "cancelled" | "ended" | "pending" | "halted" | "paused" | "no_subscription" | "verification_error";
+export type SubscriptionPresentationStatus = "active" | "cancellation_pending" | "cancelled" | "ended" | "payment_issue" | "inactive" | "verification_error";
+export type EntitlementAccessStatus = "pro" | "grace" | "inactive";
+
+export type StoredSubscriptionState = {
+  status?: string | null;
+  provider_status?: string | null;
+  current_period_end?: string | null;
+  lifecycle_state?: string | null;
+  cancel_at_cycle_end?: boolean | null;
+  provider_verification_error?: boolean | null;
+};
+
+const periodIsFuture = (periodEnd?: number | null) => Boolean(periodEnd && periodEnd * 1000 > Date.now());
+const storedPeriodIsFuture = (periodEnd?: string | null) => Boolean(periodEnd && new Date(periodEnd).getTime() > Date.now());
 
 export function matchesRecordedSubscription(snapshot: ProviderSubscription, subscriptionId: string, planId?: string | null) {
   return snapshot.id === subscriptionId && (!planId || snapshot.plan_id === planId);
 }
 
-export function entitlementStatusForProvider(status: string, periodEnd?: number) {
-  if (status === "active") return "pro";
-  if (["cancelled", "completed", "paused", "halted", "pending"].includes(status) && periodEnd && periodEnd * 1000 > Date.now()) return "grace";
-  return "inactive";
+export function shouldApplyProviderEvent(storedEventAt: string | null | undefined, incomingEventAt: string | null | undefined) {
+  if (!storedEventAt) return true;
+  if (!incomingEventAt) return false;
+  return new Date(incomingEventAt).getTime() >= new Date(storedEventAt).getTime();
 }
 
-export function subscriptionPresentation(snapshot: ProviderSubscription) {
+export function lifecycleForProvider(snapshot: ProviderSubscription) {
   const providerStatus = snapshot.status || "inactive";
-  const cancellationPending = providerStatus === "active" && Boolean(snapshot.has_scheduled_changes || snapshot.change_scheduled_at === "cycle_end");
-  const status: SubscriptionPresentationStatus = cancellationPending
-    ? "cancellation_pending"
+  const cancellationPending = (providerStatus === "active" && Boolean(snapshot.has_scheduled_changes || snapshot.change_scheduled_at === "cycle_end")) || (providerStatus === "cancelled" && periodIsFuture(snapshot.current_end));
+  const lifecycle: SubscriptionLifecycle = cancellationPending
+    ? "cancel_at_cycle_end"
     : providerStatus === "active"
       ? "active"
       : providerStatus === "cancelled"
         ? "cancelled"
-        : providerStatus === "expired" || providerStatus === "completed"
-          ? "expired"
-          : providerStatus === "pending" || providerStatus === "halted" || providerStatus === "paused"
-            ? "payment_issue"
-            : "inactive";
-
+        : providerStatus === "completed" || providerStatus === "expired"
+          ? "ended"
+          : providerStatus === "pending"
+            ? "pending"
+            : providerStatus === "halted"
+              ? "halted"
+              : providerStatus === "paused"
+                ? "paused"
+                : "no_subscription";
+  const entitlementStatus: EntitlementAccessStatus = lifecycle === "active" || lifecycle === "cancel_at_cycle_end"
+    ? (lifecycle === "active" ? "pro" : providerStatus === "active" ? "pro" : "grace")
+    : (lifecycle === "pending" || lifecycle === "halted" || lifecycle === "paused") && periodIsFuture(snapshot.current_end)
+      ? "grace"
+      : "inactive";
   return {
-    status,
+    lifecycle,
     providerStatus,
     cancellationPending,
     currentPeriodEnd: snapshot.current_end ? new Date(snapshot.current_end * 1000).toISOString() : null,
-    entitlementStatus: entitlementStatusForProvider(providerStatus, snapshot.current_end),
+    entitlementStatus,
   };
+}
+
+export function entitlementStatusForProvider(status: string, periodEnd?: number) {
+  return lifecycleForProvider({ status, current_end: periodEnd }).entitlementStatus;
+}
+
+export function subscriptionPresentation(snapshot: ProviderSubscription) {
+  const state = lifecycleForProvider(snapshot);
+  const status: SubscriptionPresentationStatus = state.lifecycle === "active"
+    ? "active"
+    : state.lifecycle === "cancel_at_cycle_end"
+      ? "cancellation_pending"
+      : state.lifecycle === "cancelled"
+        ? "cancelled"
+        : state.lifecycle === "ended"
+          ? "ended"
+          : state.lifecycle === "pending" || state.lifecycle === "halted" || state.lifecycle === "paused"
+            ? "payment_issue"
+            : "inactive";
+  return { ...state, status, verificationError: false };
+}
+
+export function presentationFromStoredState(stored: StoredSubscriptionState) {
+  const lifecycle = (stored.lifecycle_state || "") as SubscriptionLifecycle;
+  const providerStatus = stored.provider_status || "inactive";
+  const cancellationPending = Boolean(stored.cancel_at_cycle_end || lifecycle === "cancel_at_cycle_end");
+  const trustedActive = (stored.status === "pro" || stored.status === "grace") && (lifecycle === "active" || lifecycle === "cancel_at_cycle_end" || (lifecycle === "pending" || lifecycle === "halted" || lifecycle === "paused") && storedPeriodIsFuture(stored.current_period_end));
+  const verificationError = Boolean(stored.provider_verification_error);
+  if (verificationError && !trustedActive) {
+    return { status: "verification_error" as const, lifecycle: "verification_error" as const, providerStatus, cancellationPending: false, currentPeriodEnd: stored.current_period_end || null, entitlementStatus: "inactive" as const, verificationError: true };
+  }
+  const status: SubscriptionPresentationStatus = lifecycle === "active"
+    ? "active"
+    : lifecycle === "cancel_at_cycle_end"
+      ? "cancellation_pending"
+      : lifecycle === "cancelled"
+        ? "cancelled"
+        : lifecycle === "ended"
+          ? "ended"
+          : lifecycle === "pending" || lifecycle === "halted" || lifecycle === "paused"
+            ? "payment_issue"
+            : "inactive";
+  return { status, lifecycle: lifecycle || "no_subscription", providerStatus, cancellationPending, currentPeriodEnd: stored.current_period_end || null, entitlementStatus: (stored.status === "pro" || stored.status === "grace") ? stored.status : "inactive", verificationError };
 }
