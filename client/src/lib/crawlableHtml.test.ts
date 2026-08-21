@@ -7,6 +7,7 @@ const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf
 describe("crawlable static HTML generation", () => {
   const generator = source("scripts/generate-crawlable-html.mjs");
   const verifier = source("scripts/verify-crawlable-html.mjs");
+  const documentHead = source("client/index.html");
   const vercel = JSON.parse(source("vercel.json")) as { headers: Array<{ source: string; headers: Array<{ key: string; value: string }> }>; rewrites: Array<{ source: string; destination: string }> };
 
   it("emits route-specific, semantic HTML for every public SEO route without relying on hydration", () => {
@@ -40,5 +41,15 @@ describe("crawlable static HTML generation", () => {
     expect(permissions).toContain("camera=()");
     expect(permissions).not.toContain("payment");
     expect(security).not.toContainEqual(expect.objectContaining({ key: "Content-Security-Policy" }));
+  });
+
+  it("emits the approved AdSense verification script once through each shared head path", () => {
+    const adsenseUrl = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5333202766979924";
+    expect((documentHead.match(/pagead2\.googlesyndication\.com/g) || []).length).toBe(1);
+    expect(documentHead).toContain(`async src="${adsenseUrl}" crossorigin="anonymous"`);
+    expect((generator.match(/pagead2\.googlesyndication\.com/g) || []).length).toBe(1);
+    expect(generator).toContain('const adsenseVerification =');
+    expect(generator).toContain('${adsenseVerification}');
+    expect(generator).not.toContain('adsbygoogle.push');
   });
 });
