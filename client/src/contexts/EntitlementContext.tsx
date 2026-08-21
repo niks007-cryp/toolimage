@@ -1,4 +1,3 @@
-/** ToolImage entitlement context — one Supabase session source of truth with server-verified Pro state; never treats browser storage as entitlement proof. */
 import { Session, User } from "@supabase/supabase-js";
 import {
   ReactNode,
@@ -7,9 +6,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { fetchWithTimeout, withTimeout } from "@/lib/asyncTimeout";
 
 export type EntitlementStatus = "free" | "pro" | "grace" | "inactive";
 
@@ -27,14 +28,16 @@ type EntitlementContextValue = {
 };
 
 const EntitlementContext = createContext<EntitlementContextValue | null>(null);
+const ENTITLEMENT_TIMEOUT_MS = 8000;
+const AUTH_SESSION_TIMEOUT_MS = 8000;
 
 async function readEntitlement(token: string | undefined) {
   if (!token) return "free" as EntitlementStatus;
 
   try {
-    const response = await fetch("/api/entitlement", {
+    const response = await fetchWithTimeout("/api/entitlement", {
       headers: { Authorization: `Bearer ${token}` },
-    });
+    }, ENTITLEMENT_TIMEOUT_MS, "Entitlement check timed out.");
 
     if (!response.ok) return "free" as EntitlementStatus;
 
@@ -47,13 +50,18 @@ async function readEntitlement(token: string | undefined) {
 
 export function EntitlementProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const sessionRef = useRef<Session | null>(null);
   const [status, setStatus] = useState<EntitlementStatus>("free");
   const [loading, setLoading] = useState(Boolean(supabase));
 
   const applySession = useCallback(async (next: Session | null) => {
     setSession(next);
-    setStatus(await readEntitlement(next?.access_token));
-    setLoading(false);
+    sessionRef.current = next;
+    try {
+      setStatus(await readEntitlement(next?.access_token));
+    } finally {
+      setLoading(false);
+    }
     return next;
   }, []);
 
@@ -64,9 +72,14 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      const { data, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      return applySession(data.session);
+      try {
+        const { data, error } = await withTimeout(supabase.auth.getSession(), AUTH_SESSION_TIMEOUT_MS, "Session check timed out.");
+        if (error) throw error;
+        return applySession(data.session);
+      } catch {
+        setLoading(false);
+        return sessionRef.current;
+      }
     },
     [applySession],
   );
@@ -124,6 +137,7 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
       },
       signOut: async () => {
         if (supabase) await supabase.auth.signOut();
+        sessionRef.current = null;
         setStatus("free");
       },
     }),

@@ -4,9 +4,11 @@ import { Link } from "wouter";
 import { Seo } from "@/components/Seo";
 import { SiteShell } from "@/components/SiteShell";
 import { useEntitlement } from "@/contexts/EntitlementContext";
+import { fetchWithTimeout } from "@/lib/asyncTimeout";
 
 type SubscriptionStatus = "active" | "cancellation_pending" | "cancelled" | "expired" | "payment_issue" | "inactive";
 type ManagedSubscription = { plan: string; price: string; status: SubscriptionStatus; providerStatus: string; nextBillingAt: string | null; cancellationPending: boolean };
+const SUBSCRIPTION_STATUS_TIMEOUT_MS = 10000;
 
 const statusCopy: Record<SubscriptionStatus, { label: string; detail: string; tone: "good" | "warning" | "quiet" }> = {
   active: { label: "Active", detail: "Your Pro subscription is active and renews monthly unless cancelled.", tone: "good" },
@@ -45,7 +47,7 @@ export default function Subscription() {
     try {
       const session = await refresh();
       if (!session?.access_token) throw new Error("Please sign in again to manage your subscription.");
-      const response = await fetch("/api/subscriptions/status", { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const response = await fetchWithTimeout("/api/subscriptions/status", { headers: { Authorization: `Bearer ${session.access_token}` } }, SUBSCRIPTION_STATUS_TIMEOUT_MS, "Subscription check timed out. Please try again.");
       const body = await response.json().catch(() => ({})) as { subscription?: ManagedSubscription | null; error?: string };
       if (!response.ok) throw new Error(body.error || "We could not load your subscription.");
       setSubscription(body.subscription ?? null);

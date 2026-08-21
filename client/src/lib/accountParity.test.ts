@@ -46,7 +46,7 @@ describe("account, subscription, and batch parity contracts", () => {
 
   it("registers the authenticated subscription-management destination and reuses protected endpoints", () => {
     expect(router).toContain('path="/subscription" component={Subscription}');
-    expect(subscription).toContain('fetch("/api/subscriptions/status"');
+    expect(subscription).toContain('fetchWithTimeout("/api/subscriptions/status"');
     expect(subscription).toContain('fetch("/api/subscriptions/cancel"');
     expect(subscription).toContain('if (!user) { setSubscription(null); return; }');
   });
