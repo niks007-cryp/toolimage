@@ -5,6 +5,7 @@ import { ArrowDownToLine, Check, FileArchive, FileImage, LoaderCircle, Plus, Ref
 import { ImageFormat, ImageJobResult, compressToTarget, convertImage, downloadResult, formatBytes, getImageDetails, getFormatLabel, resizeImage } from "@/lib/imageProcessing";
 import { inspectBatchLimits, MAX_BATCH_FILES, MAX_BATCH_TOTAL_BYTES } from "@/lib/batchLimits";
 import { BatchMode, getSessionPresets, saveSessionPresets, SessionPreset } from "@/lib/sessionPresets";
+import { trackBatchProcessed } from "@/lib/analytics";
 
 type JobStatus = "waiting" | "processing" | "complete" | "error";
 interface BatchJob { id: string; file: File; status: JobStatus; message?: string; result?: ImageJobResult; }
@@ -56,6 +57,7 @@ export function BatchStudio() {
     const exceeded = limitError(jobs.map((job) => job.file));
     if (exceeded) { setError(exceeded); return; }
     setError(null); setProcessing(true);
+    let successfulCount = 0;
     for (const job of jobs) {
       updateJobs(job.id, { status: "processing", message: "Processing locally…", result: undefined });
       try {
@@ -63,10 +65,12 @@ export function BatchStudio() {
         const result = mode === "compress" ? await compressToTarget(job.file, Number(targetKb) * 1024, details.type) : mode === "resize" ? await resizeImage(job.file, Number(width), Number(height), details.type) : await convertImage(job.file, format);
         URL.revokeObjectURL(result.previewUrl);
         updateJobs(job.id, { status: "complete", message: "Complete", result });
+        successfulCount += 1;
       } catch (issue) { updateJobs(job.id, { status: "error", message: issue instanceof Error ? issue.message : "Couldn’t process this image." }); }
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     }
     setProcessing(false);
+    trackBatchProcessed(mode, successfulCount, mode === "convert" ? format : undefined);
   };
   const downloadZip = async () => {
     if (!completeJobs.length) return;

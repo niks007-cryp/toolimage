@@ -5,6 +5,7 @@ import { ChangeEvent, DragEvent, KeyboardEvent, useEffect, useRef, useState } fr
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDownToLine, ArrowLeft, Check, ChevronDown, FileImage, ImageDown, LoaderCircle, LockKeyhole, RefreshCw, SlidersHorizontal, Upload, WandSparkles } from "lucide-react";
 import { ImageFormat, ImageJobResult, compressToTarget, convertImage, downloadResult, formatBytes, getFormatLabel, getImageDetails, ImageDetails, resizeImage } from "@/lib/imageProcessing";
+import { trackToolCompleted } from "@/lib/analytics";
 
 export type StudioMode = "compress" | "resize" | "convert";
 
@@ -146,6 +147,7 @@ export function ImageStudio({ mode, compact = false, initialTargetBytes }: { mod
       }
       resultPreviewRef.current = processed.previewUrl;
       setResult(processed);
+      trackToolCompleted(mode, details.type, processed.format, mode === "compress" ? activeTarget : undefined);
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : "We couldn’t finish that image. Please try again.");
     } finally { setProcessing(false); }
