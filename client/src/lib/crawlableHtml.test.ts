@@ -44,7 +44,7 @@ describe("crawlable static HTML generation", () => {
   });
 
   it("emits the approved AdSense verification script once through each shared head path", () => {
-    const adsenseUrl = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5333202766979924";
+    const adsenseUrl = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5233202766979924";
     expect((documentHead.match(/pagead2\.googlesyndication\.com/g) || []).length).toBe(1);
     expect(documentHead).toContain(`async src="${adsenseUrl}" crossorigin="anonymous"`);
     expect((generator.match(/pagead2\.googlesyndication\.com/g) || []).length).toBe(1);
