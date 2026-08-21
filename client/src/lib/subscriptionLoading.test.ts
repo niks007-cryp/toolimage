@@ -16,6 +16,35 @@ describe("subscription loading resilience", () => {
     const subscription = source("client/src/pages/Subscription.tsx");
     expect(subscription).toContain('fetchWithTimeout("/api/subscriptions/status"');
     expect(subscription).toContain('"Subscription check timed out. Please try again."');
-    expect(subscription).toContain("finally { setLoading(false); }");
+    expect(subscription).toContain("if (isCurrent()) setLoading(false);");
+  });
+
+  it("loads from stable user identity and available session data instead of refreshing on each user object identity change", () => {
+    const subscription = source("client/src/pages/Subscription.tsx");
+    const initialLoad = subscription.split("const cancel =")[0];
+    expect(subscription).toContain("const userId = user?.id ?? null;");
+    expect(subscription).toContain("const accessToken = session?.access_token;");
+    expect(subscription).toContain("}, [userId, accessToken]);");
+    expect(subscription).not.toContain("}, [user]);");
+    expect(initialLoad).not.toContain("const session = await refresh();");
+  });
+
+  it("invalidates stale loads during overlap or unmount so only the current request can write state", () => {
+    const subscription = source("client/src/pages/Subscription.tsx");
+    expect(subscription).toContain("const loadGenerationRef = useRef(0);");
+    expect(subscription).toContain("const isCurrent = () => !invalidated && generation === loadGenerationRef.current;");
+    expect((subscription.match(/if \(!isCurrent\(\)\) return;/g) || []).length).toBeGreaterThanOrEqual(2);
+    expect(subscription).toContain("invalidated = true;");
+    expect(subscription).toContain("loadGenerationRef.current += 1;");
+  });
+
+  it("has explicit Free, active-session, error, and no-retry paths", () => {
+    const subscription = source("client/src/pages/Subscription.tsx");
+    expect(subscription).toContain("if (!userId)");
+    expect(subscription).toContain("if (!accessToken)");
+    expect(subscription).toContain("setSubscription(body.subscription ?? null);");
+    expect(subscription).toContain("setError(issue instanceof Error");
+    expect(subscription).not.toContain("setInterval(");
+    expect(subscription).not.toContain("setTimeout(() => void");
   });
 });

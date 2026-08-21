@@ -48,7 +48,7 @@ describe("account, subscription, and batch parity contracts", () => {
     expect(router).toContain('path="/subscription" component={Subscription}');
     expect(subscription).toContain('fetchWithTimeout("/api/subscriptions/status"');
     expect(subscription).toContain('fetch("/api/subscriptions/cancel"');
-    expect(subscription).toContain('if (!user) { setSubscription(null); return; }');
+    expect(subscription).toContain("if (!userId)");
   });
 
   it("keeps the anonymous batch gate and server-confirmed Free versus Pro render split", () => {

@@ -33,29 +33,58 @@ function CancelDialog({ open, busy, error, onClose, onConfirm, returnFocusRef }:
 }
 
 export default function Subscription() {
-  const { user, loading: entitlementLoading, refresh } = useEntitlement();
+  const { user, session, loading: entitlementLoading, refresh } = useEntitlement();
   const [subscription, setSubscription] = useState<ManagedSubscription | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const cancelTriggerRef = useRef<HTMLButtonElement>(null);
+  const loadGenerationRef = useRef(0);
+  const userId = user?.id ?? null;
+  const accessToken = session?.access_token;
 
-  const load = async () => {
-    if (!user) { setSubscription(null); return; }
-    setLoading(true); setError(null);
-    try {
-      const session = await refresh();
-      if (!session?.access_token) throw new Error("Please sign in again to manage your subscription.");
-      const response = await fetchWithTimeout("/api/subscriptions/status", { headers: { Authorization: `Bearer ${session.access_token}` } }, SUBSCRIPTION_STATUS_TIMEOUT_MS, "Subscription check timed out. Please try again.");
-      const body = await response.json().catch(() => ({})) as { subscription?: ManagedSubscription | null; error?: string };
-      if (!response.ok) throw new Error(body.error || "We could not load your subscription.");
-      setSubscription(body.subscription ?? null);
-    } catch (issue) { setError(issue instanceof Error ? issue.message : "We could not load your subscription."); }
-    finally { setLoading(false); }
-  };
+  useEffect(() => {
+    const generation = ++loadGenerationRef.current;
+    let invalidated = false;
+    const isCurrent = () => !invalidated && generation === loadGenerationRef.current;
 
-  useEffect(() => { void load(); }, [user]);
+    if (!userId) {
+      setSubscription(null);
+      setError(null);
+      setLoading(false);
+      return () => { invalidated = true; };
+    }
+
+    if (!accessToken) {
+      setSubscription(null);
+      setError("Please sign in again to manage your subscription.");
+      setLoading(false);
+      return () => { invalidated = true; };
+    }
+
+    setLoading(true);
+    setError(null);
+    void (async () => {
+      try {
+        const response = await fetchWithTimeout("/api/subscriptions/status", { headers: { Authorization: `Bearer ${accessToken}` } }, SUBSCRIPTION_STATUS_TIMEOUT_MS, "Subscription check timed out. Please try again.");
+        const body = await response.json().catch(() => ({})) as { subscription?: ManagedSubscription | null; error?: string };
+        if (!response.ok) throw new Error(body.error || "We could not load your subscription.");
+        if (!isCurrent()) return;
+        setSubscription(body.subscription ?? null);
+      } catch (issue) {
+        if (!isCurrent()) return;
+        setError(issue instanceof Error ? issue.message : "We could not load your subscription.");
+      } finally {
+        if (isCurrent()) setLoading(false);
+      }
+    })();
+
+    return () => {
+      invalidated = true;
+      if (generation === loadGenerationRef.current) loadGenerationRef.current += 1;
+    };
+  }, [userId, accessToken]);
 
   const cancel = async () => {
     setCancelling(true); setError(null);
@@ -66,7 +95,10 @@ export default function Subscription() {
       const body = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(body.error || "Cancellation could not be confirmed.");
       setDialogOpen(false);
-      await load();
+      const statusResponse = await fetchWithTimeout("/api/subscriptions/status", { headers: { Authorization: `Bearer ${session.access_token}` } }, SUBSCRIPTION_STATUS_TIMEOUT_MS, "Subscription check timed out. Please try again.");
+      const statusBody = await statusResponse.json().catch(() => ({})) as { subscription?: ManagedSubscription | null; error?: string };
+      if (!statusResponse.ok) throw new Error(statusBody.error || "We could not load your subscription.");
+      setSubscription(statusBody.subscription ?? null);
     } catch (issue) { setError(issue instanceof Error ? issue.message : "Cancellation could not be confirmed."); }
     finally { setCancelling(false); }
   };
