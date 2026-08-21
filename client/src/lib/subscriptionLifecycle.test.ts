@@ -32,6 +32,16 @@ describe("server-confirmed subscription lifecycle", () => {
     expect(presentationFromStoredState({ status: "pro", provider_status: "active", current_period_end: new Date(future * 1000).toISOString(), lifecycle_state: "active", cancel_at_cycle_end: false, provider_verification_error: true })).toMatchObject({ status: "active", verificationError: true, cancellationPending: false });
   });
 
+  it("recognizes legacy server-confirmed Pro and valid Grace records with no lifecycle snapshot", () => {
+    expect(presentationFromStoredState({ status: "pro", razorpay_subscription_id: "stored-reference", provider_status: null, current_period_end: null, lifecycle_state: null, cancel_at_cycle_end: false, provider_verification_error: false })).toMatchObject({ status: "active", lifecycle: "active", providerStatus: "active", verificationError: false });
+    expect(presentationFromStoredState({ status: "grace", razorpay_subscription_id: "stored-reference", provider_status: null, current_period_end: new Date(future * 1000).toISOString(), lifecycle_state: null, cancel_at_cycle_end: false, provider_verification_error: false })).toMatchObject({ status: "cancellation_pending", lifecycle: "cancel_at_cycle_end", cancellationPending: true, verificationError: false });
+  });
+
+  it("does not recognize a legacy record without a stored subscription reference or a valid Grace period", () => {
+    expect(presentationFromStoredState({ status: "pro", razorpay_subscription_id: null, provider_status: null, current_period_end: null, lifecycle_state: null, cancel_at_cycle_end: false, provider_verification_error: false })).toMatchObject({ status: "inactive", lifecycle: "no_subscription" });
+    expect(presentationFromStoredState({ status: "grace", razorpay_subscription_id: "stored-reference", provider_status: null, current_period_end: new Date(past * 1000).toISOString(), lifecycle_state: null, cancel_at_cycle_end: false, provider_verification_error: false })).toMatchObject({ status: "inactive", lifecycle: "no_subscription" });
+  });
+
   it("returns a distinct verification-error state when no trustworthy local subscription state exists", () => {
     expect(presentationFromStoredState({ status: "inactive", provider_status: null, current_period_end: null, lifecycle_state: null, cancel_at_cycle_end: false, provider_verification_error: true })).toMatchObject({ status: "verification_error", verificationError: true });
   });

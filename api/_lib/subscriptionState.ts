@@ -14,6 +14,7 @@ export type EntitlementAccessStatus = "pro" | "grace" | "inactive";
 
 export type StoredSubscriptionState = {
   status?: string | null;
+  razorpay_subscription_id?: string | null;
   provider_status?: string | null;
   current_period_end?: string | null;
   lifecycle_state?: string | null;
@@ -88,23 +89,26 @@ export function subscriptionPresentation(snapshot: ProviderSubscription) {
 
 export function presentationFromStoredState(stored: StoredSubscriptionState) {
   const lifecycle = (stored.lifecycle_state || "") as SubscriptionLifecycle;
-  const providerStatus = stored.provider_status || "inactive";
-  const cancellationPending = Boolean(stored.cancel_at_cycle_end || lifecycle === "cancel_at_cycle_end");
-  const trustedActive = (stored.status === "pro" || stored.status === "grace") && (lifecycle === "active" || lifecycle === "cancel_at_cycle_end" || (lifecycle === "pending" || lifecycle === "halted" || lifecycle === "paused") && storedPeriodIsFuture(stored.current_period_end));
+  const legacyPro = !lifecycle && stored.status === "pro" && Boolean(stored.razorpay_subscription_id);
+  const legacyGrace = !lifecycle && stored.status === "grace" && Boolean(stored.razorpay_subscription_id) && storedPeriodIsFuture(stored.current_period_end);
+  const effectiveLifecycle: SubscriptionLifecycle = lifecycle || (legacyPro ? "active" : legacyGrace ? "cancel_at_cycle_end" : "no_subscription");
+  const providerStatus = stored.provider_status || (legacyPro || legacyGrace ? "active" : "inactive");
+  const cancellationPending = Boolean(stored.cancel_at_cycle_end || effectiveLifecycle === "cancel_at_cycle_end");
+  const trustedActive = legacyPro || legacyGrace || ((stored.status === "pro" || stored.status === "grace") && (effectiveLifecycle === "active" || effectiveLifecycle === "cancel_at_cycle_end" || (effectiveLifecycle === "pending" || effectiveLifecycle === "halted" || effectiveLifecycle === "paused") && storedPeriodIsFuture(stored.current_period_end)));
   const verificationError = Boolean(stored.provider_verification_error);
   if (verificationError && !trustedActive) {
     return { status: "verification_error" as const, lifecycle: "verification_error" as const, providerStatus, cancellationPending: false, currentPeriodEnd: stored.current_period_end || null, entitlementStatus: "inactive" as const, verificationError: true };
   }
-  const status: SubscriptionPresentationStatus = lifecycle === "active"
+  const status: SubscriptionPresentationStatus = effectiveLifecycle === "active"
     ? "active"
-    : lifecycle === "cancel_at_cycle_end"
+    : effectiveLifecycle === "cancel_at_cycle_end"
       ? "cancellation_pending"
-      : lifecycle === "cancelled"
+      : effectiveLifecycle === "cancelled"
         ? "cancelled"
-        : lifecycle === "ended"
+        : effectiveLifecycle === "ended"
           ? "ended"
-          : lifecycle === "pending" || lifecycle === "halted" || lifecycle === "paused"
+          : effectiveLifecycle === "pending" || effectiveLifecycle === "halted" || effectiveLifecycle === "paused"
             ? "payment_issue"
             : "inactive";
-  return { status, lifecycle: lifecycle || "no_subscription", providerStatus, cancellationPending, currentPeriodEnd: stored.current_period_end || null, entitlementStatus: (stored.status === "pro" || stored.status === "grace") ? stored.status : "inactive", verificationError };
+  return { status, lifecycle: effectiveLifecycle, providerStatus, cancellationPending, currentPeriodEnd: stored.current_period_end || null, entitlementStatus: (stored.status === "pro" || stored.status === "grace") ? stored.status : "inactive", verificationError };
 }
